@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "question": "图片上传到 CDN 的完整流程是什么？",
+    "expected_sources": ["upload-sdk.md"],
+    "notes": "应包含压缩、上传、替换路径三个步骤"
+  },
+  {
+    "id": 2,
+    "question": "活动分享按钮的埋点事件名是什么？",
+    "expected_sources": ["tracking-spec.md"],
+    "notes": "应包含事件名和必填参数"
+  },
+  {
+    "id": 3,
+    "question": "弹窗组件在移动端需要注意什么？",
+    "expected_sources": ["component-guide.md"],
+    "notes": "应提到 safeArea 配置"
+  },
+  {
+    "id": 4,
+    "question": "如何在活动页初始化上传 SDK？",
+    "expected_sources": ["upload-sdk.md"],
+    "notes": "应包含初始化代码示例"
+  },
+  {
+    "id": 5,
+    "question": "图片上传前需要做哪些校验？",
+    "expected_sources": ["upload-sdk.md"],
+    "notes": "应包含大小限制、格式限制"
+  }
+]
