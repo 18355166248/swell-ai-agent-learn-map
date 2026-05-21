@@ -1,8 +1,11 @@
 # 项目 01：AI 代码解释器
 
 > 对应学习周次：Week 1–2
+> 当前状态：目录已建，代码尚未开始实现
 
-## 功能
+## 目标能力
+
+完成后预期支持：
 
 ```bash
 # 分析单个文件
@@ -27,9 +30,22 @@ node cli.js --dir ./src/utils "找出所有工具函数的作用"
 }
 ```
 
-## 目录结构
+## 当前目录状态
 
+当前仓库内实际已有：
+
+```text
+01-ai-code-explain/
+├── README.md
+└── src/
+    └── .gitkeep
 ```
+
+## 计划目录结构
+
+下面是后续实现时希望演进到的结构：
+
+```text
 01-ai-code-explain/
 ├── cli.js              # 入口，处理命令行参数
 ├── src/
@@ -46,12 +62,14 @@ node cli.js --dir ./src/utils "找出所有工具函数的作用"
 | v1   | 分析单个 .tsx 文件，JSON 输出                         | Week 1 |
 | v2   | 支持 --file（文档问答）+ --dir（批量分析）+ streaming | Week 2 |
 
-## 快速开始
+## 开始实现时的建议步骤
 
 ```bash
 cd projects/01-ai-code-explain
-cp .env.example .env
-# 填入 OPENAI_API_KEY
-npm install
-node cli.js ./path/to/your/file.tsx
+# 1. 初始化 package.json
+# 2. 创建 .env.example
+# 3. 实现 cli.js 和 src/analyzer.ts
+# 4. 再补充真实可执行命令
 ```
+
+在这些文件真正落地前，不建议把本页命令当成“已经能跑”使用。

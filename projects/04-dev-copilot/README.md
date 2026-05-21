@@ -2,6 +2,7 @@
 
 > 对应学习周次：Week 7–8
 > 别名：AI Dev Copilot for Frontend Workflow
+> 当前状态：只有目录骨架和设计说明，尚未开始实现
 
 ## 这是什么
 
@@ -26,9 +27,25 @@ Agent：
 | 代码检索 | 按语义找相关文件和代码片段                 |
 | 方案生成 | Agent 多步推理，自动生成开发方案           |
 
-## 目录结构
+## 当前目录状态
 
+当前仓库内实际已有：
+
+```text
+04-dev-copilot/
+├── README.md
+├── docs/
+│   └── knowledge-base/
+│       └── .gitkeep
+└── src/
+    └── .gitkeep
 ```
+
+## 计划目录结构
+
+下面是 Week 7–8 的目标实现结构：
+
+```text
 04-dev-copilot/
 ├── cli.js                    # 命令行入口
 ├── src/
@@ -64,14 +81,12 @@ Agent：
 | v1   | 只读工具 Agent（read/list/search）+ 需求分析 | Week 7 |
 | v2   | 功能整合 + Web UI + 引用来源 + 技术分享版本  | Week 8 |
 
-## 快速开始
+## 目标使用方式
+
+下面这些命令是最终希望支持的使用方式，不代表当前已经能运行：
 
 ```bash
 cd projects/04-dev-copilot
-cp .env.example .env
-npm install
-
-# 把内部文档放入 docs/knowledge-base/
 # 建立索引
 npm run index
 
@@ -80,7 +95,6 @@ node cli.js "帮我分析这个需求需要改哪些文件"
 
 # Web 界面
 npm start
-# 访问 http://localhost:3000
 ```
 
 ## 业务价值（技术分享用）

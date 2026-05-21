@@ -1,8 +1,11 @@
 # 项目 03：需求分析助手
 
 > 对应学习周次：Week 6
+> 当前状态：目录骨架已建，输出结构已定义，尚未开始实现
 
-## 功能
+## 目标能力
+
+完成后预期支持：
 
 ```bash
 # 命令行：分析需求文本
@@ -32,9 +35,27 @@ npm start
 }
 ```
 
-## 目录结构
+## 当前目录状态
 
+当前仓库内实际已有：
+
+```text
+03-req-analyst/
+├── README.md
+├── docs/
+│   └── knowledge-base/
+│       └── .gitkeep
+├── examples/
+│   └── .gitkeep
+└── src/
+    └── .gitkeep
 ```
+
+## 计划目录结构
+
+下面是后续实现目标：
+
+```text
 03-req-analyst/
 ├── cli.js
 ├── src/
@@ -60,15 +81,11 @@ npm start
 | v1   | 接入真实文档，结构化分析输出            | Week 6 |
 | v2   | 集成到 dev-copilot，作为一个 Agent 工具 | Week 7 |
 
-## 快速开始
+## 开始实现时的建议步骤
 
 ```bash
 cd projects/03-req-analyst
-cp .env.example .env
-npm install
-
-# 把内部规范文档放到 docs/knowledge-base/
-# 建立索引（复用 02-doc-rag 的 indexer）
-
-node cli.js "你的需求描述"
+# 1. 先复用 02-doc-rag 的索引与检索逻辑
+# 2. 再补 analyst.ts 和结构化输出 Prompt
+# 3. 最后补 CLI 或 Web 入口
 ```

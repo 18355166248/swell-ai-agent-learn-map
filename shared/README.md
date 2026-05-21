@@ -1,31 +1,23 @@
 # 跨项目共用代码
 
-> 把各项目中重复的代码提取到这里，减少复制粘贴。
+> 这个目录目前还是骨架，目的是给后续可复用模块预留位置。
 
-## 目录
+## 当前状态
 
-```
-shared/
-├── llm/
-│   └── client.ts       # OpenAI 客户端封装（含重试、错误处理）
-├── embedding/
-│   └── embedder.ts     # Embedding 调用封装（含批量处理）
-└── utils/
-    ├── chunker.ts      # 文档切分工具
-    ├── similarity.ts   # Cosine Similarity 计算
-    └── fileReader.ts   # 文件读取工具
-```
+- 已创建目录：`llm/`、`embedding/`、`utils/`
+- 当前文件：只有 `.gitkeep`
+- 当前目标：先在各项目中验证实现，再把稳定逻辑抽到这里
 
-## 使用方式
+## 计划承载的模块
 
-```typescript
-// 在各项目中引用
-import { createClient } from "../../shared/llm/client";
-import { embed, embedBatch } from "../../shared/embedding/embedder";
-import { chunkByHeading } from "../../shared/utils/chunker";
-```
+- `llm/`：模型客户端封装、重试、错误处理
+- `embedding/`：单条和批量向量化封装
+- `utils/`：切分、相似度计算、文件读取等通用工具
 
-## 注意
+## 什么时候抽共享
 
-这里只放**稳定的、跨项目通用的**工具函数。
-项目特有的逻辑放在各自的 `src/` 目录下。
+- 至少被两个项目复用
+- 接口已经稳定，不会随着单项目迭代频繁变化
+- 能明显减少复制粘贴和维护成本
+
+项目特有逻辑仍然放在各自的 `src/` 下，避免过早抽象。
