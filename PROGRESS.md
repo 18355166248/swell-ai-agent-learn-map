@@ -39,10 +39,11 @@
 - [x] 初始化学习仓库结构（weeks / projects / experiments / docs / shared）
 - [x] 拆分 8 周路线图和每周主题
 - [x] 建立项目 README、实验模板和进度模板
-- [ ] 理解 System Prompt / User Prompt
-- [ ] 掌握 JSON 输出约束
-- [ ] 了解 Function Calling 概念
-- [ ] 知道 Temperature / max_tokens 的作用
+- [x] 补齐 Week 1 学习笔记初稿
+- [x] 理解 System Prompt / User Prompt
+- [x] 掌握 JSON 输出约束
+- [x] 了解 Function Calling 概念
+- [x] 知道 Temperature / max_tokens 的作用
 - [ ] 完成 ai-code-explain CLI v1
 
 ### 本周笔记
@@ -169,7 +170,7 @@
 | 指标           | 目标          | 当前 |
 | -------------- | ------------- | ---- |
 | 周产出 Demo 数 | 每周至少 1 个 | 0    |
-| 笔记篇数       | 每周 1 篇     | 0    |
+| 笔记篇数       | 每周 1 篇     | 1    |
 | 实验记录       | ≥ 3 组对比    | 0    |
 | 最终项目能力点 | 6 项          | 0    |
 
