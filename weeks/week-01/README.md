@@ -17,7 +17,7 @@
 - [x] JSON 输出约束（structured output / response_format）
 - [x] Function Calling / Tool Calling 是什么（了解即可，第 7 周深入）
 - [x] Temperature、max_tokens、context window 的意义
-- [ ] 如何用 OpenAI SDK 发起第一个请求
+- [x] 如何用 OpenAI SDK 发起第一个请求
 
 ## 实践项目
 
@@ -43,10 +43,10 @@ node cli.js ./src/pages/home/index.tsx
 
 | 天   | 目标                              | 完成？ |
 | ---- | --------------------------------- | ------ |
-| 周一 | 调通 OpenAI API，打印 Hello World | ⬜     |
+| 周一 | 调通 OpenAI API，打印 Hello World | ✅     |
 | 周二 | 写 System Prompt，实现代码总结    | ✅     |
 | 周三 | 加 JSON 输出约束，结构化结果      | ✅     |
-| 周四 | 接入 CLI：读取真实 .tsx 文件      | ⬜     |
+| 周四 | 接入 CLI：读取真实 .tsx 文件      | ✅     |
 | 周五 | 打磨 Prompt，整理笔记             | ✅     |
 | 周末 | CLI 完整测试 + 写本周总结         | ⬜     |
 
@@ -62,6 +62,6 @@ node cli.js ./src/pages/home/index.tsx
 
 ## 产出 checklist
 
-- [ ] `projects/01-ai-code-explain/` 有可运行的 CLI
+- [x] `projects/01-ai-code-explain/` 有可运行的 CLI
 - [x] `notes.md` 记录了至少 3 个有价值的学习点
-- [ ] `PROGRESS.md` 已更新本周状态
+- [x] `PROGRESS.md` 已更新本周状态

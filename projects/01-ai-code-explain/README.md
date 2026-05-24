@@ -1,22 +1,7 @@
 # 项目 01：AI 代码解释器
 
 > 对应学习周次：Week 1–2
-> 当前状态：目录已建，代码尚未开始实现
-
-## 目标能力
-
-完成后预期支持：
-
-```bash
-# 分析单个文件
-node cli.js ./src/pages/home/index.tsx
-
-# 带问题分析文档
-node cli.js --file ./docs/activity-config.md "这个字段怎么配置？"
-
-# 分析整个目录
-node cli.js --dir ./src/utils "找出所有工具函数的作用"
-```
+> 当前状态：v1 已可运行，支持两个后端（Anthropic / OpenAI）
 
 ## 输出格式
 
@@ -25,51 +10,62 @@ node cli.js --dir ./src/utils "找出所有工具函数的作用"
   "summary": "这个文件是首页组件，负责...",
   "dependencies": ["useUserInfo hook", "/api/home 接口"],
   "components": ["BannerSwiper", "ActivityCard"],
-  "risks": ["未处理接口报错时的兜底状态"],
-  "suggestions": ["建议提取 BannerSwiper 为独立组件"]
+  "risks": ["未处理接口报错时的兜底状态"]
 }
 ```
 
-## 当前目录状态
-
-当前仓库内实际已有：
+## 当前目录结构
 
 ```text
 01-ai-code-explain/
-├── README.md
-└── src/
-    └── .gitkeep
-```
-
-## 计划目录结构
-
-下面是后续实现时希望演进到的结构：
-
-```text
-01-ai-code-explain/
-├── cli.js              # 入口，处理命令行参数
+├── cli.ts                # Anthropic 版 CLI（内部 deepseek-v4-pro）
+├── cli-openai.ts         # OpenAI 版 CLI（OpenRouter 免费模型）
 ├── src/
-│   ├── analyzer.ts     # 核心：读文件 + 调模型
-│   └── prompts.ts      # Prompt 模板
-├── package.json
+│   ├── prompts.ts        # 共享 Prompt 模板
+│   ├── analyzer.ts       # Anthropic SDK 分析器
+│   └── analyzer-openai.ts # OpenAI SDK 分析器
+├── examples/
+│   └── sample.tsx
+├── .env                  # Anthropic 版配置
+├── .env.openai           # OpenAI/OpenRouter 版配置
 └── .env.example
 ```
 
-## 迭代计划
+## 运行方法
 
-| 版本 | 功能                                                  | 对应周 |
-| ---- | ----------------------------------------------------- | ------ |
-| v1   | 分析单个 .tsx 文件，JSON 输出                         | Week 1 |
-| v2   | 支持 --file（文档问答）+ --dir（批量分析）+ streaming | Week 2 |
-
-## 开始实现时的建议步骤
+### 方式 A：Anthropic SDK（内部 deepseek-v4-pro）
 
 ```bash
-cd projects/01-ai-code-explain
-# 1. 初始化 package.json
-# 2. 创建 .env.example
-# 3. 实现 cli.js 和 src/analyzer.ts
-# 4. 再补充真实可执行命令
+cp .env.example .env          # 编辑填入 ANTHROPIC_API_KEY 等
+npx tsx cli.ts examples/sample.tsx
 ```
 
-在这些文件真正落地前，不建议把本页命令当成“已经能跑”使用。
+### 方式 B：OpenAI SDK（OpenRouter 免费模型）
+
+```bash
+cp .env.openai.example .env.openai   # 编辑填入 OPENAI_API_KEY
+npx tsx cli-openai.ts examples/sample.tsx
+
+# 切换免费模型
+npx tsx cli-openai.ts examples/sample.tsx --model openai/gpt-oss-120b:free
+npx tsx cli-openai.ts examples/sample.tsx --model deepseek/deepseek-v4-flash:free
+
+# 查看可用免费模型
+npx tsx cli-openai.ts --list-models
+```
+
+### OpenRouter 免费模型推荐
+
+| 模型 | 上下文 | 特点 |
+|------|--------|------|
+| `openai/gpt-oss-120b:free` | 128K | OpenAI 开源大模型 |
+| `qwen/qwen3-coder:free` | 1M | 代码专用 |
+| `deepseek/deepseek-v4-flash:free` | 1M | 速度快 |
+| `meta-llama/llama-3.3-70b-instruct:free` | 128K | Meta 旗舰 |
+
+## 迭代计划
+
+| 版本 | 功能 | 对应周 |
+| ---- | ---- | ------ |
+| v1 | 分析单个文件，JSON 输出 | Week 1 |
+| v2 | --file / --dir / streaming | Week 2 |

@@ -1,0 +1,20 @@
+{
+  "name": "ai-code-explain",
+  "version": "1.0.0",
+  "description": "AI 代码解释器 - 分析前端代码文件，输出结构化 JSON",
+  "type": "module",
+  "scripts": {
+    "start": "tsx cli.ts",
+    "build": "tsc",
+    "dev": "tsx watch cli.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
+    "dotenv": "^16.4.0",
+    "openai": "^4.73.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
