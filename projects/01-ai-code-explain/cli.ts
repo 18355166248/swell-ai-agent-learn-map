@@ -10,19 +10,27 @@ const localEnv = resolve(__dirname, ".env");
 config({ path: rootEnv, override: false });
 config({ path: localEnv, override: false });
 
-import { analyzeFile } from "./src/analyzer.js";
+// 导入各模块：分析器、CLI 参数解析、分析流程编排、文件加载
+import { analyzeContent, summarizeDirectory } from "./src/analyzer.js";
+import { parseCliOptions } from "./src/cli-options.js";
+import { runAnalysis } from "./src/run-analysis.js";
+import { collectDirectoryFiles, readTargetFile } from "./src/target-loader.js";
 
 async function main() {
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
     console.log(`用法: npx tsx cli.ts <文件路径>
+  或: npx tsx cli.ts --file <文件路径> [问题]
+  或: npx tsx cli.ts --dir <目录路径> [问题]
 
 AI 代码解释器 — 分析前端代码文件，输出结构化 JSON 分析结果。
 
 示例:
   npx tsx cli.ts examples/sample.tsx
-  npx tsx cli.ts ./src/pages/home/index.tsx
+  npx tsx cli.ts examples/sample.tsx "这个组件依赖了哪些接口？"
+  npx tsx cli.ts --file examples/sample.tsx "useUserInfo 来自哪里？"
+  npx tsx cli.ts --dir examples "这个目录做了什么？"
 
 环境变量:
   ANTHROPIC_API_KEY  Anthropic API 密钥（或 OPENAI_API_KEY）
@@ -39,10 +47,14 @@ AI 代码解释器 — 分析前端代码文件，输出结构化 JSON 分析结
     process.exit(1);
   }
 
-  const filePath = args[0];
-
   try {
-    const result = await analyzeFile(filePath);
+    const options = parseCliOptions(args);
+    const result = await runAnalysis(options, {
+      readTargetFile,
+      collectDirectoryFiles,
+      analyzeContent,
+      summarizeDirectory,
+    });
     console.log(JSON.stringify(result, null, 2));
   } catch (err: any) {
     console.error(`分析失败: ${err.message}`);

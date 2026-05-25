@@ -9,8 +9,12 @@ const localEnv = resolve(__dirname, ".env.openai");
 config({ path: rootEnv, override: false });
 config({ path: localEnv, override: false });
 
-import { analyzeFile } from "./src/analyzer-openai.js";
+import { analyzeContent, summarizeDirectory } from "./src/analyzer-openai.js";
+import { parseCliOptions } from "./src/cli-options.js";
+import { runAnalysis } from "./src/run-analysis.js";
+import { collectDirectoryFiles, readTargetFile } from "./src/target-loader.js";
 
+/** OpenRouter 上可用的免费模型列表 */
 const FREE_MODELS = [
   "openai/gpt-oss-120b:free",
   "openai/gpt-oss-20b:free",
@@ -25,11 +29,16 @@ async function main() {
 
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
     console.log(`用法: npx tsx cli-openai.ts <文件路径> [选项]
+  或: npx tsx cli-openai.ts --file <文件路径> [问题] [选项]
+  或: npx tsx cli-openai.ts --dir <目录路径> [问题] [选项]
 
 AI 代码解释器 (OpenAI SDK / OpenRouter 免费模型)
 
 示例:
   npx tsx cli-openai.ts examples/sample.tsx
+  npx tsx cli-openai.ts examples/sample.tsx "这个组件依赖了哪些接口？"
+  npx tsx cli-openai.ts --file examples/sample.tsx "useUserInfo 来自哪里？"
+  npx tsx cli-openai.ts --dir examples "这个目录做了什么？"
   npx tsx cli-openai.ts examples/sample.tsx --model qwen/qwen3-coder:free
   npx tsx cli-openai.ts examples/sample.tsx --stream
 
@@ -63,14 +72,31 @@ ${FREE_MODELS.map((m) => `  - ${m}`).join("\n")}
     process.exit(1);
   }
 
-  // 解析 --model 参数
+  // 解析 --model / -m 参数，覆盖环境变量中的模型名
   const modelIdx = args.findIndex((a) => a === "--model" || a === "-m");
   if (modelIdx !== -1 && args[modelIdx + 1]) {
     process.env.MODEL_NAME = args[modelIdx + 1];
   }
 
+  // 是否开启流式输出（--stream / -s）
   const shouldStream = args.includes("--stream") || args.includes("-s");
-  const filePath = args[0];
+
+  // 从 args 中剔除 --stream/-s 和 --model/-m 及其值，剩余参数传给 parseCliOptions
+  const analysisArgs = args.filter((arg, index) => {
+    if (arg === "--stream" || arg === "-s") {
+      return false;
+    }
+
+    if (arg === "--model" || arg === "-m") {
+      return false;
+    }
+
+    if ((args[index - 1] === "--model" || args[index - 1] === "-m") && modelIdx !== -1) {
+      return false;
+    }
+
+    return true;
+  });
 
   console.error(`模型: ${process.env.MODEL_NAME || "openai/gpt-oss-120b:free"}\n`);
   if (shouldStream) {
@@ -78,12 +104,19 @@ ${FREE_MODELS.map((m) => `  - ${m}`).join("\n")}
   }
 
   try {
-    const result = await analyzeFile(filePath, {
-      onChunk: shouldStream
-        ? (chunk) => {
-            process.stderr.write(chunk);
-          }
-        : undefined,
+    const options = parseCliOptions(analysisArgs);
+    const result = await runAnalysis(options, {
+      readTargetFile,
+      collectDirectoryFiles,
+      analyzeContent: (filePath, fileContent, question) =>
+        analyzeContent(filePath, fileContent, question, {
+          onChunk: shouldStream
+            ? (chunk) => {
+                process.stderr.write(chunk);
+              }
+            : undefined,
+        }),
+      summarizeDirectory,
     });
     if (shouldStream) {
       process.stderr.write("\n\n");

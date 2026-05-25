@@ -6,7 +6,8 @@
   "scripts": {
     "start": "tsx cli.ts",
     "build": "tsc",
-    "dev": "tsx watch cli.ts"
+    "dev": "tsx watch cli.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.98.0",
@@ -15,6 +16,7 @@
   },
   "devDependencies": {
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.8"
   }
 }
