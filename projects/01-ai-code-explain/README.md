@@ -1,7 +1,12 @@
 # 项目 01：AI 代码解释器
 
 > 对应学习周次：Week 1–2
-> 当前状态：v1 已可运行，支持两个后端（Anthropic / OpenAI）
+> 当前状态：v1 已完成本地测试、构建验证和真实模型端到端验证，支持两个后端（Anthropic / OpenAI）
+
+## 当前验证状态
+
+- 已验证：Prompt 组装测试通过、TypeScript 构建通过、CLI 入口可执行、真实文件端到端分析可返回结果
+- 当前限制：Codex 执行环境不允许直接把工作区源码发送到外部模型服务，因此真实模型验证是由用户在本机终端补做
 
 ## 输出格式
 
@@ -56,16 +61,16 @@ npx tsx cli-openai.ts --list-models
 
 ### OpenRouter 免费模型推荐
 
-| 模型 | 上下文 | 特点 |
-|------|--------|------|
-| `openai/gpt-oss-120b:free` | 128K | OpenAI 开源大模型 |
-| `qwen/qwen3-coder:free` | 1M | 代码专用 |
-| `deepseek/deepseek-v4-flash:free` | 1M | 速度快 |
-| `meta-llama/llama-3.3-70b-instruct:free` | 128K | Meta 旗舰 |
+| 模型                                     | 上下文 | 特点              |
+| ---------------------------------------- | ------ | ----------------- |
+| `openai/gpt-oss-120b:free`               | 128K   | OpenAI 开源大模型 |
+| `qwen/qwen3-coder:free`                  | 1M     | 代码专用          |
+| `deepseek/deepseek-v4-flash:free`        | 1M     | 速度快            |
+| `meta-llama/llama-3.3-70b-instruct:free` | 128K   | Meta 旗舰         |
 
 ## 迭代计划
 
-| 版本 | 功能 | 对应周 |
-| ---- | ---- | ------ |
-| v1 | 分析单个文件，JSON 输出 | Week 1 |
-| v2 | --file / --dir / streaming | Week 2 |
+| 版本 | 功能                       | 对应周 |
+| ---- | -------------------------- | ------ |
+| v1   | 分析单个文件，JSON 输出    | Week 1 |
+| v2   | --file / --dir / streaming | Week 2 |

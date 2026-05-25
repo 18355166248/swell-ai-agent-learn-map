@@ -4,9 +4,9 @@
 
 ## 当前状态
 
-- 当前日期：2026-05-21
-- 当前阶段：Week 1，刚完成仓库初始化，主体内容以学习计划、项目骨架和记录模板为主
-- 当前重点：先把文档、进度和项目说明维护到一致，再按周推进实现
+- 当前日期：2026-05-25
+- 当前阶段：Week 1 已完成，准备进入 Week 2
+- 当前重点：在 `ai-code-explain` 上补 streaming、长文件处理、`--file` / `--dir` 参数和错误处理
 
 ## 学习路径
 
@@ -27,8 +27,8 @@ Prompt 基础
 
 这个仓库目前分成两类内容：
 
-- 已有内容：路线图、周计划、项目骨架、实验模板、决策记录
-- 计划补齐：概念笔记正文、项目实现代码、可运行脚本、统一的共享模块
+- 已有内容：路线图、周计划、项目骨架、Week 1 概念笔记、`ai-code-explain` v1、基础测试与构建配置
+- 计划补齐：更多概念笔记正文、后续项目实现代码、Week 2 功能迭代、统一的共享模块
 
 ### 当前仓库结构
 
@@ -54,15 +54,15 @@ swell-ai-agent-learn-map/
 
 ## 快速导航
 
-| 我想看什么 | 去哪里 |
-| ---------- | ------ |
-| 本周任务 | `weeks/week-XX/README.md` |
-| 每周笔记 | `weeks/week-XX/notes.md` |
-| 整体路线 | `ROADMAP.md` |
-| 当前进度 | `PROGRESS.md` |
-| 技术决策 | `docs/decisions/tech-stack.md` |
-| 概念现状 | `docs/concepts/README.md` |
-| 实验记录 | `experiments/` |
+| 我想看什么 | 去哪里                         |
+| ---------- | ------------------------------ |
+| 本周任务   | `weeks/week-XX/README.md`      |
+| 每周笔记   | `weeks/week-XX/notes.md`       |
+| 整体路线   | `ROADMAP.md`                   |
+| 当前进度   | `PROGRESS.md`                  |
+| 技术决策   | `docs/decisions/tech-stack.md` |
+| 概念现状   | `docs/concepts/README.md`      |
+| 实验记录   | `experiments/`                 |
 
 ## 最终目标
 
@@ -75,8 +75,8 @@ swell-ai-agent-learn-map/
 
 ## 技术栈取舍
 
-| 层级 | 选择 |
-| ---- | ---- |
+| 层级       | 选择                                                     |
+| ---------- | -------------------------------------------------------- |
 | 第一优先级 | TypeScript、Node.js、OpenAI SDK、Embedding、RAG Pipeline |
-| 第二优先级 | LangChain / LlamaIndex、pgvector、MCP、Agent Workflow |
-| 暂不投入 | 模型训练、微调、GPU 部署 |
+| 第二优先级 | LangChain / LlamaIndex、pgvector、MCP、Agent Workflow    |
+| 暂不投入   | 模型训练、微调、GPU 部署                                 |

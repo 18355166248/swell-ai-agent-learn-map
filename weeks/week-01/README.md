@@ -1,7 +1,7 @@
 # Week 1：Prompt 基础 + LLM API 初探
 
 **时间**：2026-05-21 – 2026-05-27
-**状态**：🟡 进行中
+**状态**：✅ 完成
 
 ## 本周目标
 
@@ -25,7 +25,7 @@
 
 ```bash
 # 目标效果
-node cli.js ./src/pages/home/index.tsx
+npx tsx cli.ts examples/sample.tsx
 ```
 
 输出格式（JSON）：
@@ -41,14 +41,14 @@ node cli.js ./src/pages/home/index.tsx
 
 ## 每日安排
 
-| 天   | 目标                              | 完成？ |
-| ---- | --------------------------------- | ------ |
-| 周一 | 调通 OpenAI API，打印 Hello World | ✅     |
-| 周二 | 写 System Prompt，实现代码总结    | ✅     |
-| 周三 | 加 JSON 输出约束，结构化结果      | ✅     |
-| 周四 | 接入 CLI：读取真实 .tsx 文件      | ✅     |
-| 周五 | 打磨 Prompt，整理笔记             | ✅     |
-| 周末 | CLI 完整测试 + 写本周总结         | ⬜     |
+| 天   | 目标                                     | 完成？ |
+| ---- | ---------------------------------------- | ------ |
+| 周一 | 调通 OpenAI API，打印 Hello World        | ✅     |
+| 周二 | 写 System Prompt，实现代码总结           | ✅     |
+| 周三 | 加 JSON 输出约束，结构化结果             | ✅     |
+| 周四 | 接入 CLI：读取真实 .tsx 文件             | ✅     |
+| 周五 | 打磨 Prompt，整理笔记                    | ✅     |
+| 周末 | CLI 完整测试 + 真实模型验证 + 写本周总结 | ✅     |
 
 ## 参考资源
 
@@ -65,3 +65,5 @@ node cli.js ./src/pages/home/index.tsx
 - [x] `projects/01-ai-code-explain/` 有可运行的 CLI
 - [x] `notes.md` 记录了至少 3 个有价值的学习点
 - [x] `PROGRESS.md` 已更新本周状态
+- [x] `projects/01-ai-code-explain` 已完成本地测试、构建验证和真实模型端到端验证
+- [x] Week 1 状态已同步到仓库总览、进度页和项目 README
