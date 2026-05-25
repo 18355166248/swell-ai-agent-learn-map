@@ -3,7 +3,7 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootEnv = resolve(__dirname, "..", "..", "..", ".env");
+const rootEnv = resolve(__dirname, "..", "..", ".env");
 const localEnv = resolve(__dirname, ".env.openai");
 
 config({ path: rootEnv, override: false });

@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 
 // 先尝试加载项目根目录的 .env，再尝试当前目录
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const rootEnv = resolve(__dirname, "..", "..", "..", ".env");
+const rootEnv = resolve(__dirname, "..", "..", ".env");
 const localEnv = resolve(__dirname, ".env");
 
 config({ path: rootEnv, override: false });
