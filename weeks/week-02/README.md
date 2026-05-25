@@ -23,11 +23,13 @@
 # 已完成：OpenAI 版支持 streaming
 npx tsx cli-openai.ts examples/sample.tsx --stream
 
-# 新增：支持 --file 传入文档
-node cli.js --file ./docs/activity-config.md "这个字段怎么配置？"
+# 本周目标：支持 --file 传入文档
+# 目标用法（实现后）
+npx tsx cli.ts --file ./docs/activity-config.md "这个字段怎么配置？"
 
-# 新增：支持 --dir 分析整个目录
-node cli.js --dir ./src/utils "找出所有工具函数的作用"
+# 本周目标：支持 --dir 分析整个目录
+# 目标用法（实现后）
+npx tsx cli.ts --dir ./src/utils "找出所有工具函数的作用"
 ```
 
 ## 每日安排
