@@ -2,17 +2,10 @@ import Anthropic from "@anthropic-ai/sdk";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompts.js";
-
-export interface AnalysisResult {
-  summary: string;
-  dependencies: string[];
-  components: string[];
-  risks: string[];
-}
+import { parseAnalysisResult, type AnalysisResult } from "./analysis-result.js";
 
 function getClient(): Anthropic {
-  const apiKey =
-    process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || "";
+  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || "";
 
   const opts: Record<string, unknown> = { apiKey };
 
@@ -57,27 +50,5 @@ export async function analyzeFile(filePath: string): Promise<AnalysisResult> {
     throw new Error("模型返回了空内容");
   }
 
-  let parsed: AnalysisResult;
-  try {
-    // 尝试从可能包含 markdown 代码块的输出中提取 JSON
-    const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    const jsonStr = jsonMatch ? jsonMatch[0] : raw;
-    parsed = JSON.parse(jsonStr);
-  } catch {
-    throw new Error(`无法解析模型返回的 JSON:\n${raw.slice(0, 500)}`);
-  }
-
-  const normalizeArray = (arr: unknown): string[] => {
-    if (!Array.isArray(arr)) return [];
-    return arr.map((item) =>
-      typeof item === "string" ? item : JSON.stringify(item),
-    );
-  };
-
-  return {
-    summary: typeof parsed.summary === "string" ? parsed.summary : "",
-    dependencies: normalizeArray(parsed.dependencies),
-    components: normalizeArray(parsed.components),
-    risks: normalizeArray(parsed.risks),
-  };
+  return parseAnalysisResult(raw);
 }

@@ -3,6 +3,8 @@
 > 对应学习周次：Week 1–2
 > 当前状态：v1 已完成本地测试、构建验证和真实模型端到端验证，支持两个后端（Anthropic / OpenAI）
 
+> Week 2 进展：OpenAI CLI 已支持 `--stream` 增量输出
+
 ## 当前验证状态
 
 - 已验证：Prompt 组装测试通过、TypeScript 构建通过、CLI 入口可执行、真实文件端到端分析可返回结果
@@ -50,6 +52,7 @@ npx tsx cli.ts examples/sample.tsx
 ```bash
 cp .env.openai.example .env.openai   # 编辑填入 OPENAI_API_KEY
 npx tsx cli-openai.ts examples/sample.tsx
+npx tsx cli-openai.ts examples/sample.tsx --stream
 
 # 切换免费模型
 npx tsx cli-openai.ts examples/sample.tsx --model openai/gpt-oss-120b:free

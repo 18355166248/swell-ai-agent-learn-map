@@ -2,6 +2,7 @@ import OpenAI, { APIError } from "openai";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { SYSTEM_PROMPT, buildUserPrompt } from "./prompts.js";
+import { parseAnalysisResult, type AnalysisResult } from "./analysis-result.js";
 
 const STATUS_TIPS: Record<number, string> = {
   401: "API Key 无效，请检查 .env.openai 中的 OPENAI_API_KEY",
@@ -10,11 +11,8 @@ const STATUS_TIPS: Record<number, string> = {
   429: "请求太频繁或免费额度用完了，稍等几分钟再试或换个模型",
 };
 
-export interface AnalysisResult {
-  summary: string;
-  dependencies: string[];
-  components: string[];
-  risks: string[];
+export interface AnalyzeFileOptions {
+  onChunk?: (chunk: string) => void;
 }
 
 function getClient(): OpenAI {
@@ -35,7 +33,10 @@ function getClient(): OpenAI {
   } as any);
 }
 
-export async function analyzeFile(filePath: string): Promise<AnalysisResult> {
+export async function analyzeFile(
+  filePath: string,
+  options: AnalyzeFileOptions = {},
+): Promise<AnalysisResult> {
   const absolutePath = resolve(filePath);
   let fileContent: string;
 
@@ -54,51 +55,53 @@ export async function analyzeFile(filePath: string): Promise<AnalysisResult> {
 
   const userPrompt = buildUserPrompt({ filePath, fileContent });
 
-  let response: OpenAI.Chat.Completions.ChatCompletion;
+  let raw = "";
   try {
-    response = await client.chat.completions.create({
-      model: modelName,
-      temperature: 0.2,
-      max_tokens: 2048,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-    });
+    if (options.onChunk) {
+      const stream = await client.chat.completions.create({
+        model: modelName,
+        temperature: 0.2,
+        max_tokens: 2048,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+        stream: true,
+      });
+
+      // streaming 只负责把模型增量内容透出给 CLI；最终仍然要以完整 JSON 做统一解析。
+      for await (const chunk of stream) {
+        const delta = chunk.choices[0]?.delta?.content;
+        if (!delta) continue;
+        raw += delta;
+        options.onChunk(delta);
+      }
+    } else {
+      const response = await client.chat.completions.create({
+        model: modelName,
+        temperature: 0.2,
+        max_tokens: 2048,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      });
+
+      raw = response.choices[0]?.message?.content || "";
+    }
   } catch (err) {
     if (err instanceof APIError) {
       const tip = STATUS_TIPS[err.status] || "";
-      throw new Error(
-        `${modelName}: ${err.status} ${err.message}${tip ? `\n${tip}` : ""}`
-      );
+      throw new Error(`${modelName}: ${err.status} ${err.message}${tip ? `\n${tip}` : ""}`);
     }
     throw err;
   }
 
-  const raw = response.choices[0]?.message?.content;
   if (!raw) {
     throw new Error("模型返回了空内容");
   }
 
-  let parsed: AnalysisResult;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    throw new Error(`无法解析模型返回的 JSON:\n${raw.slice(0, 500)}`);
-  }
-
-  const normalizeArray = (arr: unknown): string[] => {
-    if (!Array.isArray(arr)) return [];
-    return arr.map((item) =>
-      typeof item === "string" ? item : JSON.stringify(item)
-    );
-  };
-
-  return {
-    summary: typeof parsed.summary === "string" ? parsed.summary : "",
-    dependencies: normalizeArray(parsed.dependencies),
-    components: normalizeArray(parsed.components),
-    risks: normalizeArray(parsed.risks),
-  };
+  return parseAnalysisResult(raw);
 }

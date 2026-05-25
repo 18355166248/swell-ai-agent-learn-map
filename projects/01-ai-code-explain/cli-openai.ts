@@ -31,9 +31,11 @@ AI 代码解释器 (OpenAI SDK / OpenRouter 免费模型)
 示例:
   npx tsx cli-openai.ts examples/sample.tsx
   npx tsx cli-openai.ts examples/sample.tsx --model qwen/qwen3-coder:free
+  npx tsx cli-openai.ts examples/sample.tsx --stream
 
 选项:
   --model, -m    指定模型（默认 ${process.env.MODEL_NAME || "openai/gpt-oss-120b:free"}）
+  --stream, -s   在 stderr 实时打印模型输出
   --list-models  列出可用的免费模型
 
 环境变量 (.env.openai):
@@ -67,12 +69,25 @@ ${FREE_MODELS.map((m) => `  - ${m}`).join("\n")}
     process.env.MODEL_NAME = args[modelIdx + 1];
   }
 
+  const shouldStream = args.includes("--stream") || args.includes("-s");
   const filePath = args[0];
 
   console.error(`模型: ${process.env.MODEL_NAME || "openai/gpt-oss-120b:free"}\n`);
+  if (shouldStream) {
+    console.error("Streaming: 已开启，增量输出将打印到 stderr\n");
+  }
 
   try {
-    const result = await analyzeFile(filePath);
+    const result = await analyzeFile(filePath, {
+      onChunk: shouldStream
+        ? (chunk) => {
+            process.stderr.write(chunk);
+          }
+        : undefined,
+    });
+    if (shouldStream) {
+      process.stderr.write("\n\n");
+    }
     console.log(JSON.stringify(result, null, 2));
   } catch (err: any) {
     console.error(`分析失败: ${err.message}`);
