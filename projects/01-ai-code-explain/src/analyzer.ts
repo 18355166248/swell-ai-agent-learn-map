@@ -4,6 +4,8 @@ import { resolve } from "path";
 import { buildDirectorySummaryPrompt, SYSTEM_PROMPT, buildUserPrompt } from "./prompts.js";
 import { parseAnalysisResult, type AnalysisResult } from "./analysis-result.js";
 import type { DirectoryFileResult } from "./types.js";
+import { truncateContent } from "./content-truncator.js";
+import { withRetry } from "./retry.js";
 
 /** 创建 Anthropic SDK 客户端，支持通过 OPENAI_BASE_URL 切换兼容端点 */
 function getClient(): Anthropic {
@@ -30,19 +32,32 @@ export async function analyzeContent(
   const client = getClient();
   const modelName = process.env.MODEL_NAME || "official-deepseek-v4-pro";
 
-  const userPrompt = buildUserPrompt({ filePath, fileContent, question });
+  const truncResult = truncateContent(fileContent, filePath, modelName);
+  if (truncResult.truncated) {
+    process.stderr.write(`${truncResult.warning}\n`);
+  }
 
-  const response = await client.messages.create({
-    model: modelName,
-    max_tokens: 2048,
-    temperature: 0.2,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userPrompt }],
-  });
+  const userPrompt = buildUserPrompt({ filePath, fileContent: truncResult.content, question });
 
-  // 提取 text 类型的 content block（跳过 thinking 等类型）
-  const textBlocks = response.content.filter((b) => b.type === "text");
-  const raw = textBlocks.map((b) => (b as any).text).join("");
+  let raw = "";
+
+  try {
+    await withRetry(async () => {
+      const response = await client.messages.create({
+        model: modelName,
+        max_tokens: 2048,
+        temperature: 0.2,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: userPrompt }],
+      });
+
+      const textBlocks = response.content.filter((b) => b.type === "text");
+      raw = textBlocks.map((b) => (b as any).text).join("");
+    }, `Anthropic ${filePath}`);
+  } catch (err: any) {
+    throw new Error(`${modelName}: ${err.message || err}`);
+  }
+
   if (!raw) {
     throw new Error("模型返回了空内容");
   }
@@ -72,16 +87,24 @@ export async function summarizeDirectory(
   const modelName = process.env.MODEL_NAME || "official-deepseek-v4-pro";
   const userPrompt = buildDirectorySummaryPrompt({ dirPath, files, question });
 
-  const response = await client.messages.create({
-    model: modelName,
-    max_tokens: 600,
-    temperature: 0.2,
-    system: "你是一个前端目录分析助手。请只返回简洁中文总结。",
-    messages: [{ role: "user", content: userPrompt }],
-  });
+  let raw = "";
 
-  const textBlocks = response.content.filter((b) => b.type === "text");
-  const raw = textBlocks.map((b) => (b as any).text).join("").trim();
+  try {
+    await withRetry(async () => {
+      const response = await client.messages.create({
+        model: modelName,
+        max_tokens: 600,
+        temperature: 0.2,
+        system: "你是一个前端目录分析助手。请只返回简洁中文总结。",
+        messages: [{ role: "user", content: userPrompt }],
+      });
+
+      const textBlocks = response.content.filter((b) => b.type === "text");
+      raw = textBlocks.map((b) => (b as any).text).join("").trim();
+    }, `Anthropic 目录总结 ${dirPath}`);
+  } catch (err: any) {
+    throw new Error(`${modelName}: ${err.message || err}`);
+  }
 
   if (!raw) {
     throw new Error("模型返回了空内容");

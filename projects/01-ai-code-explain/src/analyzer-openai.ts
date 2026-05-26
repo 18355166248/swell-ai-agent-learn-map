@@ -4,6 +4,8 @@ import { resolve } from "path";
 import { buildDirectorySummaryPrompt, SYSTEM_PROMPT, buildUserPrompt } from "./prompts.js";
 import { parseAnalysisResult, type AnalysisResult } from "./analysis-result.js";
 import type { DirectoryFileResult } from "./types.js";
+import { truncateContent } from "./content-truncator.js";
+import { withRetry } from "./retry.js";
 
 /** HTTP 状态码对应的中文提示 */
 const STATUS_TIPS: Record<number, string> = {
@@ -38,6 +40,15 @@ function getClient(): OpenAI {
   } as any);
 }
 
+/** 将 API 错误转换为带中文提示的友好错误 */
+function wrapApiError(err: unknown, modelName: string): Error {
+  if (err instanceof APIError) {
+    const tip = STATUS_TIPS[err.status] || "";
+    return new Error(`${modelName}: ${err.status} ${err.message}${tip ? `\n${tip}` : ""}`);
+  }
+  return err instanceof Error ? err : new Error(String(err));
+}
+
 export async function analyzeContent(
   filePath: string,
   fileContent: string,
@@ -51,50 +62,55 @@ export async function analyzeContent(
   const client = getClient();
   const modelName = process.env.MODEL_NAME || "openai/gpt-oss-120b:free";
 
-  const userPrompt = buildUserPrompt({ filePath, fileContent, question });
+  const truncResult = truncateContent(fileContent, filePath, modelName);
+  if (truncResult.truncated) {
+    process.stderr.write(`${truncResult.warning}\n`);
+  }
+
+  const userPrompt = buildUserPrompt({ filePath, fileContent: truncResult.content, question });
 
   let raw = "";
+
   try {
     if (options.onChunk) {
-      const stream = await client.chat.completions.create({
-        model: modelName,
-        temperature: 0.2,
-        max_tokens: 2048,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-        stream: true,
-      });
+      await withRetry(async () => {
+        const stream = await client.chat.completions.create({
+          model: modelName,
+          temperature: 0.2,
+          max_tokens: 2048,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: "json_object" },
+          stream: true,
+        });
 
-      // streaming 只负责把模型增量内容透出给 CLI；最终仍然要以完整 JSON 做统一解析。
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta?.content;
-        if (!delta) continue;
-        raw += delta;
-        options.onChunk(delta);
-      }
+        for await (const chunk of stream) {
+          const delta = chunk.choices[0]?.delta?.content;
+          if (!delta) continue;
+          raw += delta;
+          options.onChunk!(delta);
+        }
+      }, `OpenAI streaming ${filePath}`);
     } else {
-      const response = await client.chat.completions.create({
-        model: modelName,
-        temperature: 0.2,
-        max_tokens: 2048,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      });
+      await withRetry(async () => {
+        const response = await client.chat.completions.create({
+          model: modelName,
+          temperature: 0.2,
+          max_tokens: 2048,
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: "json_object" },
+        });
 
-      raw = response.choices[0]?.message?.content || "";
+        raw = response.choices[0]?.message?.content || "";
+      }, `OpenAI ${filePath}`);
     }
   } catch (err) {
-    if (err instanceof APIError) {
-      const tip = STATUS_TIPS[err.status] || "";
-      throw new Error(`${modelName}: ${err.status} ${err.message}${tip ? `\n${tip}` : ""}`);
-    }
-    throw err;
+    throw wrapApiError(err, modelName);
   }
 
   if (!raw) {
@@ -133,23 +149,21 @@ export async function summarizeDirectory(
   let raw = "";
 
   try {
-    const response = await client.chat.completions.create({
-      model: modelName,
-      temperature: 0.2,
-      max_tokens: 600,
-      messages: [
-        { role: "system", content: "你是一个前端目录分析助手。请只返回简洁中文总结。" },
-        { role: "user", content: userPrompt },
-      ],
-    });
+    await withRetry(async () => {
+      const response = await client.chat.completions.create({
+        model: modelName,
+        temperature: 0.2,
+        max_tokens: 600,
+        messages: [
+          { role: "system", content: "你是一个前端目录分析助手。请只返回简洁中文总结。" },
+          { role: "user", content: userPrompt },
+        ],
+      });
 
-    raw = response.choices[0]?.message?.content?.trim() || "";
+      raw = response.choices[0]?.message?.content?.trim() || "";
+    }, `OpenAI 目录总结 ${dirPath}`);
   } catch (err) {
-    if (err instanceof APIError) {
-      const tip = STATUS_TIPS[err.status] || "";
-      throw new Error(`${modelName}: ${err.status} ${err.message}${tip ? `\n${tip}` : ""}`);
-    }
-    throw err;
+    throw wrapApiError(err, modelName);
   }
 
   if (!raw) {

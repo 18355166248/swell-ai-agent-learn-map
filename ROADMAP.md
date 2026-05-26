@@ -59,10 +59,10 @@ npx tsx cli.ts ./src/pages/home/index.tsx
 
 ### 学习目标
 
-- [ ] 掌握 streaming 流式输出
-- [ ] 理解 token 计算和上下文窗口限制
-- [ ] 学会处理长文档（简单截断或摘要）
-- [ ] 熟悉 OpenAI SDK 的错误处理和重试
+- [x] 掌握 streaming 流式输出
+- [x] 理解 token 计算和上下文窗口限制
+- [x] 学会处理长文档（简单截断或摘要）
+- [x] 熟悉 OpenAI SDK 的错误处理和重试
 
 ### 实践任务
 
