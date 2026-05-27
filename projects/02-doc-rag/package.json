@@ -6,13 +6,18 @@
   "scripts": {
     "index": "tsx src/index.ts",
     "ask": "tsx src/ask.ts",
+    "start": "tsx src/server.ts",
     "test": "vitest run"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "multer": "^2.1.1",
     "openai": "^4.73.0"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"

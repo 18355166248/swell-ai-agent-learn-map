@@ -5,7 +5,6 @@ import OpenAI from "openai";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// 优先加载根 .env 中的 OPENAI_API_KEY，项目级 .env 不覆盖已设置的值
 config({ path: resolve(__dirname, "..", "..", "..", ".env"), override: false });
 config({ path: resolve(__dirname, "..", ".env"), override: false });
 
