@@ -6,3 +6,4 @@ dist/
 *.js.map
 out.json
 stream.log
+.DS_Store
