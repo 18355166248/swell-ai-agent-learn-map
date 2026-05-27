@@ -1,11 +1,16 @@
 import OpenAI, { APIError } from "openai";
 import { readFileSync } from "fs";
 import { resolve } from "path";
-import { buildDirectorySummaryPrompt, SYSTEM_PROMPT, buildUserPrompt } from "./prompts.js";
-import { parseAnalysisResult, type AnalysisResult } from "./analysis-result.js";
+import { buildDirectorySummaryPromptFromText, SYSTEM_PROMPT, buildUserPrompt } from "./prompts.js";
+import { resolveOutputLanguage } from "./output-language.js";
+import {
+  hasMeaningfulAnalysisResult,
+  parseAnalysisResult,
+  type AnalysisResult,
+} from "./analysis-result.js";
 import type { DirectoryFileResult } from "./types.js";
 import { truncateContent } from "./content-truncator.js";
-import { withRetry } from "./retry.js";
+import { extractContextLimitFromError, isContextTooLongError, withRetry } from "./retry.js";
 
 /** HTTP 状态码对应的中文提示 */
 const STATUS_TIPS: Record<number, string> = {
@@ -13,7 +18,10 @@ const STATUS_TIPS: Record<number, string> = {
   402: "该免费模型已停止提供或额度用尽，试试其他模型",
   403: "访问被拒绝，请检查 OpenRouter 账户状态",
   429: "请求太频繁或免费额度用完了，稍等几分钟再试或换个模型",
+  404: "请求地址或模型名不存在；请确认当前走的是 OpenRouter 地址，并使用受支持的免费模型",
 };
+
+const DEFAULT_OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 /** 分析选项 */
 export interface AnalyzeFileOptions {
@@ -25,11 +33,10 @@ export interface AnalyzeFileOptions {
 function getClient(): OpenAI {
   const config: Record<string, string> = {
     apiKey: process.env.OPENAI_API_KEY || "",
+    // OpenAI CLI 默认面向 OpenRouter 免费模型，未显式配置时直接使用 OpenRouter 地址，
+    // 避免模型 ID 落到 OpenAI 官方地址后出现稳定 404。
+    baseURL: process.env.OPENAI_BASE_URL || DEFAULT_OPENROUTER_BASE_URL,
   };
-
-  if (process.env.OPENAI_BASE_URL) {
-    config.baseURL = process.env.OPENAI_BASE_URL;
-  }
 
   return new OpenAI({
     ...config,
@@ -61,17 +68,44 @@ export async function analyzeContent(
 
   const client = getClient();
   const modelName = process.env.MODEL_NAME || "openai/gpt-oss-120b:free";
+  const outputLanguage = resolveOutputLanguage(question);
 
-  const truncResult = truncateContent(fileContent, filePath, modelName);
+  const buildUserPromptWithBudget = (content: string, forceNonEmptySummary = false) => {
+    const basePrompt = buildUserPrompt({
+      filePath,
+      fileContent: content,
+      question,
+      outputLanguage,
+    });
+    if (!forceNonEmptySummary) {
+      return basePrompt;
+    }
+
+    return (
+      `${basePrompt}\n\n` +
+      (outputLanguage === "en"
+        ? "Additional requirement: summary must contain at least one full English sentence and cannot be empty; if dependencies/components/risks are empty, summary must still clearly explain the file's primary responsibility."
+        : "补充要求：summary 必须是至少一句中文，不能留空；如果 dependencies/components/risks 判断为空，也必须先在 summary 里明确说明这个文件的主要职责。")
+    );
+  };
+  const createTruncation = (safetyMargin: number, forceNonEmptySummary = false) =>
+    truncateContent(fileContent, filePath, {
+      modelName,
+      systemPrompt: SYSTEM_PROMPT,
+      createPrompt: (content: string) => buildUserPromptWithBudget(content, forceNonEmptySummary),
+      maxOutputTokens: 2048,
+      safetyMargin,
+    });
+
+  let truncResult = createTruncation(1000);
   if (truncResult.truncated) {
     process.stderr.write(`${truncResult.warning}\n`);
   }
 
-  const userPrompt = buildUserPrompt({ filePath, fileContent: truncResult.content, question });
+  const runRequest = async (content: string, forceNonEmptySummary = false) => {
+    const userPrompt = buildUserPromptWithBudget(content, forceNonEmptySummary);
+    let raw = "";
 
-  let raw = "";
-
-  try {
     if (options.onChunk) {
       await withRetry(async () => {
         const stream = await client.chat.completions.create({
@@ -109,15 +143,64 @@ export async function analyzeContent(
         raw = response.choices[0]?.message?.content || "";
       }, `OpenAI ${filePath}`);
     }
+
+    return raw;
+  };
+
+  let raw = "";
+
+  try {
+    raw = await runRequest(truncResult.content);
   } catch (err) {
-    throw wrapApiError(err, modelName);
+    if (!isContextTooLongError(err)) {
+      throw wrapApiError(err, modelName);
+    }
+
+    // 上下文仍然超限时，不原样重试请求，而是进一步缩小输入后重新发起一次。
+    const serverLimit = extractContextLimitFromError(err);
+    const fallbackResult = truncateContent(fileContent, filePath, {
+      modelName,
+      contextLimit: serverLimit,
+      systemPrompt: SYSTEM_PROMPT,
+      createPrompt: (content: string) => buildUserPromptWithBudget(content),
+      maxOutputTokens: 2048,
+      safetyMargin: 4000,
+    });
+    if (fallbackResult.truncated && fallbackResult.content !== truncResult.content) {
+      process.stderr.write(
+        `[上下文兜底] ${filePath}: 首次压缩后仍超限，继续按服务端真实限制缩小输入重试${serverLimit ? `（${serverLimit} tokens）` : ""}\n`,
+      );
+      process.stderr.write(`${fallbackResult.warning}\n`);
+      truncResult = fallbackResult;
+
+      try {
+        raw = await runRequest(truncResult.content);
+      } catch (retryErr) {
+        throw wrapApiError(retryErr, modelName);
+      }
+    } else {
+      throw wrapApiError(err, modelName);
+    }
   }
 
   if (!raw) {
     throw new Error("模型返回了空内容");
   }
 
-  return parseAnalysisResult(raw);
+  let parsed = parseAnalysisResult(raw);
+  if (hasMeaningfulAnalysisResult(parsed)) {
+    return parsed;
+  }
+
+  process.stderr.write(`[结果兜底] ${filePath}: 模型返回了全空 JSON，使用更强约束重试一次\n`);
+  const stricterTruncation = createTruncation(1500, true);
+  if (stricterTruncation.truncated && stricterTruncation.content !== truncResult.content) {
+    process.stderr.write(`${stricterTruncation.warning}\n`);
+  }
+
+  const strictRaw = await runRequest(stricterTruncation.content, true);
+  parsed = parseAnalysisResult(strictRaw);
+  return parsed;
 }
 
 export async function analyzeFile(
@@ -144,8 +227,26 @@ export async function summarizeDirectory(
 ): Promise<string> {
   const client = getClient();
   const modelName = process.env.MODEL_NAME || "openai/gpt-oss-120b:free";
-  const userPrompt = buildDirectorySummaryPrompt({ dirPath, files, question });
+  const outputLanguage = resolveOutputLanguage(question);
+  const summarySystemPrompt =
+    outputLanguage === "en"
+      ? "You are a frontend directory analysis assistant. Return only a concise English summary."
+      : "你是一个前端目录分析助手。请只返回简洁中文总结。";
+  const directorySummaryText = JSON.stringify(files, null, 2);
+  const buildDirectoryPrompt = (content: string) =>
+    buildDirectorySummaryPromptFromText(dirPath, content, question, outputLanguage);
+  const truncResult = truncateContent(directorySummaryText, dirPath, {
+    modelName,
+    systemPrompt: summarySystemPrompt,
+    createPrompt: buildDirectoryPrompt,
+    maxOutputTokens: 600,
+    safetyMargin: 800,
+  });
+  if (truncResult.truncated) {
+    process.stderr.write(`${truncResult.warning}\n`);
+  }
 
+  const userPrompt = buildDirectoryPrompt(truncResult.content);
   let raw = "";
 
   try {
@@ -155,7 +256,7 @@ export async function summarizeDirectory(
         temperature: 0.2,
         max_tokens: 600,
         messages: [
-          { role: "system", content: "你是一个前端目录分析助手。请只返回简洁中文总结。" },
+          { role: "system", content: summarySystemPrompt },
           { role: "user", content: userPrompt },
         ],
       });

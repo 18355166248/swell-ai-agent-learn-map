@@ -49,7 +49,7 @@ describe("estimateTokens", () => {
 describe("getContextLimit", () => {
   it("returns limit for known model", () => {
     expect(getContextLimit("openai/gpt-oss-120b:free")).toBe(128_000);
-    expect(getContextLimit("qwen/qwen3-coder:free")).toBe(1_000_000);
+    expect(getContextLimit("qwen/qwen3-coder:free")).toBe(262_000);
   });
 
   it("returns default for unknown model", () => {

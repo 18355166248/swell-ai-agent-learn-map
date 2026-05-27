@@ -22,36 +22,63 @@ export function isRetryableError(err: unknown): boolean {
   if (
     message.includes("401") || // 认证失败
     message.includes("402") || // 付费/额度
-    message.includes("403")    // 权限拒绝
+    message.includes("403") // 权限拒绝
   ) {
     return false;
   }
 
   // 可重试的错误模式
   if (
-    message.includes("429") ||          // rate limit
-    message.includes("500") ||          // 服务端错误
-    message.includes("502") ||          // bad gateway
-    message.includes("503") ||          // 服务不可用
-    message.includes("timeout") ||      // 超时
-    message.includes("ETIMEDOUT") ||    // 网络超时
-    message.includes("ECONNRESET") ||   // 连接重置
-    message.includes("network") ||      // 网络错误
-    message.includes("rate") ||         // 限流变体
-    message.includes("overloaded")      // 服务过载
+    message.includes("429") || // rate limit
+    message.includes("500") || // 服务端错误
+    message.includes("502") || // bad gateway
+    message.includes("503") || // 服务不可用
+    message.includes("timeout") || // 超时
+    message.includes("ETIMEDOUT") || // 网络超时
+    message.includes("ECONNRESET") || // 连接重置
+    message.includes("network") || // 网络错误
+    message.includes("rate") || // 限流变体
+    message.includes("overloaded") // 服务过载
   ) {
     return true;
   }
 
   // Anthropic SDK 特定错误
-  if (
-    message.includes("overloaded_error") ||
-    message.includes("rate_limit_error")
-  ) {
+  if (message.includes("overloaded_error") || message.includes("rate_limit_error")) {
     return true;
   }
 
   return false;
+}
+
+/** 判断是否属于上下文超限，命中后应走“重新压缩输入后再发一次”的兜底，而不是原样重试。 */
+export function isContextTooLongError(err: unknown): boolean {
+  const message = (err instanceof Error ? err.message : String(err)).toLowerCase();
+
+  return (
+    message.includes("context too long") ||
+    message.includes("context_length_exceeded") ||
+    message.includes("maximum context length") ||
+    message.includes("prompt is too long") ||
+    message.includes("input is too long") ||
+    message.includes("too many tokens")
+  );
+}
+
+/** 从服务端错误文案里提取真实的上下文窗口上限，便于重新压缩输入后自动重试。 */
+export function extractContextLimitFromError(err: unknown): number | undefined {
+  const message = err instanceof Error ? err.message : String(err);
+  const match =
+    message.match(/maximum context length is\s+(\d+)\s+tokens/i) ||
+    message.match(/context window(?: size)?(?: is|:)\s*(\d+)/i) ||
+    message.match(/max(?:imum)?(?: allowed)?\s+tokens[:\s]+(\d+)/i);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const limit = Number(match[1]);
+  return Number.isFinite(limit) && limit > 0 ? limit : undefined;
 }
 
 /**

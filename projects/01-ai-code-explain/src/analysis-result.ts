@@ -29,3 +29,13 @@ export function parseAnalysisResult(raw: string): AnalysisResult {
     risks: normalizeArray(parsed.risks),
   };
 }
+
+/** 判断模型结果是否提供了足够的信息，避免把“全空 JSON”误判为成功。 */
+export function hasMeaningfulAnalysisResult(result: AnalysisResult): boolean {
+  return (
+    result.summary.trim().length > 0 ||
+    result.dependencies.length > 0 ||
+    result.components.length > 0 ||
+    result.risks.length > 0
+  );
+}

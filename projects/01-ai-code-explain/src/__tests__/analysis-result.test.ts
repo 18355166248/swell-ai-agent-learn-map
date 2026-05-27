@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAnalysisResult } from "../analysis-result.js";
+import { hasMeaningfulAnalysisResult, parseAnalysisResult } from "../analysis-result.js";
 
 describe("parseAnalysisResult", () => {
   it("应解析纯 JSON 字符串", () => {
@@ -44,5 +44,29 @@ describe("parseAnalysisResult", () => {
     expect(result.dependencies).toEqual([]);
     expect(result.components).toEqual([]);
     expect(result.risks).toEqual([]);
+  });
+});
+
+describe("hasMeaningfulAnalysisResult", () => {
+  it("treats non-empty summary as meaningful", () => {
+    expect(
+      hasMeaningfulAnalysisResult({
+        summary: "文件职责",
+        dependencies: [],
+        components: [],
+        risks: [],
+      }),
+    ).toBe(true);
+  });
+
+  it("treats all-empty JSON as non-meaningful", () => {
+    expect(
+      hasMeaningfulAnalysisResult({
+        summary: "",
+        dependencies: [],
+        components: [],
+        risks: [],
+      }),
+    ).toBe(false);
   });
 });

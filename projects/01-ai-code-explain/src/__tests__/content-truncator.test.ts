@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { truncateContent } from "../content-truncator.js";
 import { countTokens } from "../token-counter.js";
+import { buildUserPrompt, SYSTEM_PROMPT } from "../prompts.js";
 
 describe("truncateContent", () => {
   const smallContent = "export const hello = 'world';\n";
@@ -63,5 +64,28 @@ describe("truncateContent", () => {
     expect(result.content.length).toBeGreaterThan(0);
     expect(result.content).toContain("[截断]");
     expect(result.originalTokens).toBeGreaterThan(result.truncatedTokens);
+  });
+
+  it("uses the real prompt budget instead of naked file tokens", () => {
+    const line = "export const field = 'value';\n";
+    const content = line.repeat(120);
+    const question = "解释这个文件";
+    const createPrompt = (candidate: string) =>
+      buildUserPrompt({ filePath, fileContent: candidate, question });
+    const contextLimit = countTokens(SYSTEM_PROMPT) + countTokens(createPrompt(content)) + 30;
+
+    const result = truncateContent(content, filePath, {
+      contextLimit,
+      systemPrompt: SYSTEM_PROMPT,
+      createPrompt,
+      maxOutputTokens: 40,
+      safetyMargin: 10,
+    });
+
+    const finalTotal =
+      countTokens(SYSTEM_PROMPT) + countTokens(createPrompt(result.content)) + 40 + 10;
+
+    expect(result.truncated).toBe(true);
+    expect(finalTotal).toBeLessThanOrEqual(contextLimit);
   });
 });

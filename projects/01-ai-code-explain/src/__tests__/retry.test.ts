@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { isRetryableError, withRetry } from "../retry.js";
+import {
+  extractContextLimitFromError,
+  isContextTooLongError,
+  isRetryableError,
+  withRetry,
+} from "../retry.js";
 
 describe("isRetryableError", () => {
   it("returns true for 429 rate limit", () => {
@@ -82,9 +87,9 @@ describe("withRetry", () => {
   it("throws immediately on non-retryable error", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("401 Unauthorized"));
 
-    await expect(
-      withRetry(fn, "test", { verbose: false, baseDelayMs: 1 }),
-    ).rejects.toThrow("401 Unauthorized");
+    await expect(withRetry(fn, "test", { verbose: false, baseDelayMs: 1 })).rejects.toThrow(
+      "401 Unauthorized",
+    );
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
@@ -100,8 +105,36 @@ describe("withRetry", () => {
   it("throws non-Error values as-is", async () => {
     const fn = vi.fn().mockRejectedValue("plain string error");
 
-    await expect(
-      withRetry(fn, "test", { verbose: false, baseDelayMs: 1 }),
-    ).rejects.toBe("plain string error");
+    await expect(withRetry(fn, "test", { verbose: false, baseDelayMs: 1 })).rejects.toBe(
+      "plain string error",
+    );
+  });
+});
+
+describe("isContextTooLongError", () => {
+  it("识别常见的 context too long 报错", () => {
+    expect(isContextTooLongError(new Error("context too long"))).toBe(true);
+    expect(isContextTooLongError(new Error("maximum context length is 128000 tokens"))).toBe(true);
+    expect(isContextTooLongError(new Error("context_length_exceeded"))).toBe(true);
+    expect(isContextTooLongError(new Error("prompt is too long"))).toBe(true);
+    expect(isContextTooLongError(new Error("too many tokens"))).toBe(true);
+  });
+
+  it("不会把普通错误误判为上下文超限", () => {
+    expect(isContextTooLongError(new Error("429 Too Many Requests"))).toBe(false);
+    expect(isContextTooLongError(new Error("network error"))).toBe(false);
+  });
+});
+
+describe("extractContextLimitFromError", () => {
+  it("extracts the context limit from OpenRouter style messages", () => {
+    const err = new Error(
+      "400 This endpoint's maximum context length is 262000 tokens. However, you requested about 861430 tokens.",
+    );
+    expect(extractContextLimitFromError(err)).toBe(262_000);
+  });
+
+  it("returns undefined when the message does not contain a limit", () => {
+    expect(extractContextLimitFromError(new Error("network error"))).toBeUndefined();
   });
 });

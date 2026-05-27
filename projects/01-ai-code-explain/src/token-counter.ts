@@ -5,7 +5,7 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   "official-deepseek-v4-pro": 128_000,
   "openai/gpt-oss-120b:free": 128_000,
   "openai/gpt-oss-20b:free": 128_000,
-  "qwen/qwen3-coder:free": 1_000_000,
+  "qwen/qwen3-coder:free": 262_000,
   "deepseek/deepseek-v4-flash:free": 1_000_000,
   "meta-llama/llama-3.3-70b-instruct:free": 128_000,
   "nvidia/nemotron-3-super-120b-a12b:free": 128_000,
