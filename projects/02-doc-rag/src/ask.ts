@@ -66,7 +66,6 @@ async function main() {
 
   // 问题向量化
   const queryEmbedding = await getEmbedding(question);
-
   // 检索 Top-K
   const results = retrieve(queryEmbedding, vectors, TOP_K);
   console.log("检索结果:");

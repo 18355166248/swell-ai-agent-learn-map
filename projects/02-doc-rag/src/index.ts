@@ -39,7 +39,9 @@ async function main() {
   }
 
   const absoluteDir = resolve(docsDir);
+  console.log("absoluteDir", absoluteDir);
   const mdFiles = collectMarkdownFiles(absoluteDir);
+  console.log(mdFiles);
 
   if (mdFiles.length === 0) {
     console.error(`目录 ${absoluteDir} 中没有找到 .md 文件`);

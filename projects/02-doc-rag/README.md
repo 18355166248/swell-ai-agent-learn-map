@@ -9,10 +9,10 @@
 
 ```bash
 # 索引文档
-node src/index.ts ./docs/knowledge-base/
+npx tsx src/index.ts ./docs/knowledge-base/
 
 # 命令行问答
-node src/ask.ts "图片上传 CDN 的流程是什么？"
+npx tsx src/ask.ts "图片上传 CDN 的流程是什么？"
 
 # 启动 Web 服务
 npm start
