@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "index": "tsx src/index.ts",
-    "ask": "tsx src/ask.ts"
+    "ask": "tsx src/ask.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "dotenv": "^16.4.0",
