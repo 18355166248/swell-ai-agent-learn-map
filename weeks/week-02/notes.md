@@ -34,8 +34,10 @@ const tokenCount = encoder.encode(text).length;
 兜底方案：当 tiktoken 不可用时，用字符数估算。中文约 1 token/字，英文约 1 token/3.5 字符。
 
 模型上下文窗口配置（`token-counter.ts`）：
+
 - 128K: deepseek-v4-pro, gpt-oss, llama-3.3
-- 1M: qwen3-coder, deepseek-v4-flash
+- 262K: qwen3-coder
+- 1M: deepseek-v4-flash
 
 ## 长文档处理策略
 
@@ -65,13 +67,13 @@ await withRetry(() => apiCall(), “context”, {
 
 重试决策逻辑（`retry.ts`）：
 
-| 错误类型 | 重试？ | 原因 |
-|----------|--------|------|
-| 429 Rate Limit | ✅ 重试 | 限流是临时的 |
-| 5xx Server Error | ✅ 重试 | 服务端可能恢复 |
-| Timeout/Network | ✅ 重试 | 网络抖动 |
-| overloaded_error | ✅ 重试 | Anthropic 过载 |
-| 401/402/403 | ❌ 不重试 | 认证失败重试也没用 |
+| 错误类型         | 重试？    | 原因               |
+| ---------------- | --------- | ------------------ |
+| 429 Rate Limit   | ✅ 重试   | 限流是临时的       |
+| 5xx Server Error | ✅ 重试   | 服务端可能恢复     |
+| Timeout/Network  | ✅ 重试   | 网络抖动           |
+| overloaded_error | ✅ 重试   | Anthropic 过载     |
+| 401/402/403      | ❌ 不重试 | 认证失败重试也没用 |
 
 延时计算：`baseDelay * 2^attempt ± 25% jitter`，例如 1s → 2s → 4s。
 

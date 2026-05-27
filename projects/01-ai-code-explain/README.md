@@ -143,7 +143,7 @@ npx tsx cli-openai.ts --list-models
 | 模型                                     | 上下文 | 特点              |
 | ---------------------------------------- | ------ | ----------------- |
 | `openai/gpt-oss-120b:free`               | 128K   | OpenAI 开源大模型 |
-| `qwen/qwen3-coder:free`                  | 1M     | 代码专用          |
+| `qwen/qwen3-coder:free`                  | 262K   | 代码专用          |
 | `deepseek/deepseek-v4-flash:free`        | 1M     | 速度快            |
 | `meta-llama/llama-3.3-70b-instruct:free` | 128K   | Meta 旗舰         |
 

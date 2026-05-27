@@ -1,7 +1,7 @@
 # Week 3：Embedding + 向量检索
 
 **时间**：2026-06-04 – 2026-06-10
-**状态**：⬜ 未开始
+**状态**：🔄 进行中
 
 ## 本周目标
 
@@ -58,16 +58,16 @@ node src/ask.js "图片上传 CDN 的流程是什么？"
 
 | 天   | 目标                                   | 完成？ |
 | ---- | -------------------------------------- | ------ |
-| 周一 | 调用 Embedding API，打印一段文字的向量 | ⬜     |
-| 周二 | 手写 Cosine Similarity，测试搜索效果   | ⬜     |
-| 周三 | 实现文档按段落切分                     | ⬜     |
-| 周四 | 批量 embedding + 存到 JSON             | ⬜     |
-| 周五 | 实现检索：问题 → Top 3 chunk           | ⬜     |
-| 周末 | 把检索结果拼成 Prompt，让模型回答      | ⬜     |
+| 周一 | 调用 Embedding API，打印一段文字的向量 | ✅     |
+| 周二 | 手写 Cosine Similarity，测试搜索效果   | ✅     |
+| 周三 | 实现文档按段落切分                     | ✅     |
+| 周四 | 批量 embedding + 存到 JSON             | ✅     |
+| 周五 | 实现检索：问题 → Top 3 chunk           | ✅     |
+| 周末 | 把检索结果拼成 Prompt，让模型回答      | ✅     |
 
 ## 产出 checklist
 
-- [ ] 能把一个 Markdown 文件向量化并存到本地
-- [ ] 输入问题能返回最相关的 3 个文本段落
-- [ ] `projects/02-doc-rag/` 有骨架代码
-- [ ] `notes.md` 记录 Embedding 的直觉理解
+- [x] 能把一个 Markdown 文件向量化并存到本地
+- [x] 输入问题能返回最相关的 3 个文本段落
+- [x] `projects/02-doc-rag/` 有骨架代码
+- [x] `notes.md` 记录 Embedding 的直觉理解

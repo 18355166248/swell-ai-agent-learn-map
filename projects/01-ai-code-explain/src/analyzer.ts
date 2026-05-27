@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 import { buildDirectorySummaryPromptFromText, SYSTEM_PROMPT, buildUserPrompt } from "./prompts.js";
-import { resolveOutputLanguage } from "./output-language.js";
+import { detectResultLanguage, isLanguageMatch, resolveOutputLanguage } from "./output-language.js";
 import {
   hasMeaningfulAnalysisResult,
   parseAnalysisResult,
@@ -74,8 +74,13 @@ export async function analyzeContent(
     process.stderr.write(`${truncResult.warning}\n`);
   }
 
-  const runRequest = async (content: string, forceNonEmptySummary = false) => {
-    const userPrompt = buildUserPromptWithBudget(content, forceNonEmptySummary);
+  const runRequest = async (
+    content: string,
+    forceNonEmptySummary = false,
+    extraInstruction = "",
+  ) => {
+    const basePrompt = buildUserPromptWithBudget(content, forceNonEmptySummary);
+    const userPrompt = basePrompt + extraInstruction;
     let raw = "";
 
     await withRetry(async () => {
@@ -136,6 +141,29 @@ export async function analyzeContent(
 
   let parsed = parseAnalysisResult(raw);
   if (hasMeaningfulAnalysisResult(parsed)) {
+    // 结果语言校验：检查 summary + dependencies + components + risks 全部文本字段
+    let resultLanguage = detectResultLanguage(parsed);
+    if (!isLanguageMatch(resultLanguage, outputLanguage)) {
+      process.stderr.write(
+        `[语言兜底] ${filePath}: 期望 ${outputLanguage}，实际 ${resultLanguage || "未知"}，追加强制语言指令重试\n`,
+      );
+      const langHint =
+        outputLanguage === "zh-CN"
+          ? "\n\n【强制要求】你的上一次回复没有使用中文。summary、dependencies、components、risks 的值必须全部使用中文。禁止使用英文。"
+          : "\n\n【MANDATORY】Your last reply did not use English. All values in summary, dependencies, components, risks MUST be in English. Do NOT use Chinese.";
+      raw = await runRequest(truncResult.content, false, langHint);
+      parsed = parseAnalysisResult(raw);
+
+      // 重试后再次校验：若仍不匹配，记录警告但不无限重试
+      if (hasMeaningfulAnalysisResult(parsed)) {
+        resultLanguage = detectResultLanguage(parsed);
+        if (!isLanguageMatch(resultLanguage, outputLanguage)) {
+          process.stderr.write(
+            `[语言兜底] ${filePath}: 强制重试后语言仍未纠正（${resultLanguage || "未知"}），已尽力\n`,
+          );
+        }
+      }
+    }
     return parsed;
   }
 
@@ -147,6 +175,16 @@ export async function analyzeContent(
 
   const strictRaw = await runRequest(stricterTruncation.content, true);
   parsed = parseAnalysisResult(strictRaw);
+
+  // 兜底路径也做语言校验，避免绕过前面的语言约束
+  if (hasMeaningfulAnalysisResult(parsed)) {
+    const resultLanguage = detectResultLanguage(parsed);
+    if (!isLanguageMatch(resultLanguage, outputLanguage)) {
+      process.stderr.write(
+        `[语言兜底] ${filePath}: 期望 ${outputLanguage}，实际 ${resultLanguage || "未知"}，已尽力（兜底路径无法再重试）\n`,
+      );
+    }
+  }
   return parsed;
 }
 

@@ -1,0 +1,19 @@
+{
+  "name": "doc-rag",
+  "version": "1.0.0",
+  "description": "文档 RAG 问答系统 - 向量化检索 + LLM 回答",
+  "type": "module",
+  "scripts": {
+    "index": "tsx src/index.ts",
+    "ask": "tsx src/ask.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0",
+    "openai": "^4.73.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
