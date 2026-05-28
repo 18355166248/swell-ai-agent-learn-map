@@ -10,22 +10,22 @@
 
 ## 当前快照
 
-- 更新时间：2026-05-26
-- 当前阶段：Week 2 已完成
-- 本周已完成：streaming 流式输出、--file/--dir 支持、token 计算与上下文窗口感知、长文档截断处理、错误重试与指数退避
-- 下周待开始：Week 3 Embedding + 向量检索
+- 更新时间：2026-05-28
+- 当前阶段：Week 7 已完成
+- 本周已完成：Agent ReAct 循环 + 5 个只读工具 + CLI + Web UI (SSE 流式)
+- 下周待开始：Week 8 整合收尾 + 技术分享
 
 ## 总体进度
 
 | 周次   | 时间        | 主题                    | 状态      | 项目产出           |
 | ------ | ----------- | ----------------------- | --------- | ------------------ |
 | Week 1 | 05/21–05/27 | Prompt 基础 + LLM API   | ✅ 完成   | ai-code-explain v1 |
-| Week 2 | 05/28–06/03 | LLM API 进阶 + 文件问答 | ✅ 完成 | ai-code-explain v2 |
-| Week 3 | 06/04–06/10 | Embedding + 向量检索    | ⬜ 未开始 | doc-rag 骨架       |
-| Week 4 | 06/11–06/17 | RAG 完整 Demo           | ⬜ 未开始 | doc-rag 完整版     |
-| Week 5 | 06/18–06/24 | RAG 效果优化            | ⬜ 未开始 | 实验记录           |
-| Week 6 | 06/25–07/01 | 接入真实场景            | ⬜ 未开始 | req-analyst v1     |
-| Week 7 | 07/02–07/08 | Agent + 工具调用        | ⬜ 未开始 | dev-copilot v1     |
+| Week 2 | 05/28–06/03 | LLM API 进阶 + 文件问答 | ✅ 完成   | ai-code-explain v2 |
+| Week 3 | 06/04–06/10 | Embedding + 向量检索    | ✅ 完成   | doc-rag 核心模块   |
+| Week 4 | 06/11–06/17 | RAG 完整 Demo           | ✅ 完成   | doc-rag Web 服务   |
+| Week 5 | 06/18–06/24 | RAG 效果优化            | ✅ 完成   | BM25 + 混合检索    |
+| Week 6 | 06/25–07/01 | 接入真实场景            | ✅ 完成   | req-analyst v1     |
+| Week 7 | 07/02–07/08 | Agent + 工具调用        | ✅ 完成   | dev-copilot v1     |
 | Week 8 | 07/09–07/15 | 整合收尾                | ⬜ 未开始 | dev-copilot 完整版 |
 
 状态说明：✅ 完成 | 🟡 进行中 | ⬜ 未开始 | ❌ 延期
@@ -92,11 +92,12 @@
 
 ### 完成情况
 
-- [ ] 用 Embedding API 向量化文本
-- [ ] 手写 Cosine Similarity
-- [ ] 实现文档切分
-- [ ] 批量 embedding 并存到 JSON
-- [ ] 实现最基础的向量检索
+- [x] 用 Embedding API 向量化文本
+- [x] 手写 Cosine Similarity
+- [x] 实现文档切分（Markdown 按标题切分）
+- [x] 批量 embedding 并存到 JSON
+- [x] 实现最基础的向量检索
+- [x] doc-rag 核心模块完成（chunker / embedder / retriever）
 
 ### 本周笔记
 
@@ -108,10 +109,11 @@
 
 ### 完成情况
 
-- [ ] 完整 RAG Pipeline
-- [ ] 引用来源展示
-- [ ] 基础 Web UI
-- [ ] 端到端测试通过
+- [x] 完整 RAG Pipeline
+- [x] 引用来源展示
+- [x] 基础 Web UI
+- [x] Express 服务 + 文件上传
+- [x] 端到端测试通过
 
 ### 本周笔记
 
@@ -123,11 +125,12 @@
 
 ### 完成情况
 
-- [ ] 建立评估数据集（10 个问题）
-- [ ] 对比 3 种 Chunk 策略
-- [ ] 实现 Query 改写
-- [ ] 调研 BM25 关键词搜索
-- [ ] 最优策略回填进项目
+- [x] 建立评估数据集
+- [x] 对比 3 种 Chunk 策略
+- [x] 实现 Query 改写（默认启用）
+- [x] 实现 BM25 关键词搜索
+- [x] 实现混合检索（RRF 融合）
+- [x] 最优策略回填进项目
 
 ### 实验结论
 
@@ -139,11 +142,12 @@
 
 ### 完成情况
 
-- [ ] 收集并整理真实文档
-- [ ] 建立文档索引
-- [ ] 完成需求分析 Prompt 设计
-- [ ] 结构化输出实现
-- [ ] 真实需求测试 ≥ 3 个
+- [x] 收集并整理真实文档（5 个规范：组件库/埋点/接口/支付/发布）
+- [x] 建立文档索引
+- [x] 完成需求分析 Prompt 设计（6 维度结构化输出）
+- [x] 结构化输出实现（JSON 格式）
+- [x] Express 服务 + Web UI（3 个预设示例）
+- [x] 真实需求测试 ≥ 3 个
 
 ---
 
@@ -151,11 +155,17 @@
 
 ### 完成情况
 
-- [ ] Tool Calling 实现
-- [ ] read_file 工具
-- [ ] search_code 工具
-- [ ] search_docs 工具
-- [ ] 多工具组合 Agent 测试
+- [x] Agent ReAct 循环（OpenAI function calling）
+- [x] read_file 工具（路径安全 + 行号切片 + 二进制检测）
+- [x] list_files 工具（递归 + pattern 过滤）
+- [x] search_code 工具（关键词搜索代码文件）
+- [x] grep 工具（正则表达式搜索 + 上下文行）
+- [x] search_docs 工具（RAG 混合检索 + 合并多向量库）
+- [x] 工具注册表（map 模式 + 统一错误处理）
+- [x] CLI 入口（彩色终端输出 + 参数解析）
+- [x] Express 服务 + SSE 流式端点
+- [x] 聊天式 Web UI（SSE 实时推理链展示）
+- [x] 多工具组合 Agent 测试（search_code → grep → 分析）
 
 ---
 
