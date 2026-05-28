@@ -1,7 +1,7 @@
 # Week 5：RAG 效果优化
 
 **时间**：2026-06-18 – 2026-06-24
-**状态**：⬜ 未开始
+**状态**：✅ 已完成
 
 ## 本周目标
 
@@ -47,12 +47,12 @@
 | 周二 | 实现按标题切分，对比固定大小切分的效果              | ✅     |
 | 周三 | 实现 Query 改写，对比检索效果                       | ✅     |
 | 周四 | 调研并实现简单的 BM25 关键词搜索                    | ✅     |
-| 周五 | 整理对比结论，写进 `experiments/chunk-strategies/`  | ⬜     |
-| 周末 | 把最优策略回填进 `projects/02-doc-rag/`             | ⬜     |
+| 周五 | 整理对比结论，写进 `experiments/chunk-strategies/`  | ✅     |
+| 周末 | 把最优策略回填进 `projects/02-doc-rag/`             | ✅     |
 
 ## 产出 checklist
 
 - [x] 评估数据集（`experiments/chunk-strategies/eval-dataset.json`）
 - [x] 3 种切分策略的对比结论
 - [x] Query 改写的 Prompt 模板
-- [ ] 优化后项目的效果有明显提升
+- [x] 优化后项目的效果有明显提升

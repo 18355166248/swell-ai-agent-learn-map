@@ -1,14 +1,16 @@
 # 项目 02：文档 RAG 问答系统
 
 > 对应学习周次：Week 3–5
-> 当前状态：v2 已完成，支持 CLI 问答 + Web UI + 引用来源
+> 当前状态：v3 已完成，支持 Query 改写 + 混合检索 + 安全加固
 
 ## 已实现功能
 
 - CLI 文档索引和问答（`index.ts` / `ask.ts`）
-- Express Web 服务 + API（`server.ts`）
-- Web UI 上传 + 提问 + 来源展示（`public/index.html`）
+- Express Web 服务 + API（`server.ts`），Query 改写默认启用
+- Web UI 上传 + 提问 + 来源展示（`public/index.html`），支持改写/混合开关
 - 向量检索 + 结构化输出（`retriever.ts` / `rag.ts`）
+- BM25 关键词检索 + RRF 混合融合（`keyword-search.ts`）
+- 按标题语义切分（`chunker-heading.ts`，备选策略）
 - 文档切分 + Embedding 调用（`chunker.ts` / `embedder.ts`）
 - 路径穿越防护、文件大小限制、大小写扩展名兼容
 
@@ -64,8 +66,8 @@ npm start
 
 ## 迭代计划
 
-| 版本 | 功能                                       | 对应周    |
-| ---- | ------------------------------------------ | --------- |
-| v1   | 内存数组 + JSON 存储，命令行问答           | Week 3 ✅ |
-| v2   | Express API + Web UI + 引用来源 + 安全加固 | Week 4 ✅ |
-| v3   | 按标题切分 + Query 改写 + 混合检索         | Week 5 ⬜ |
+| 版本 | 功能                                         | 对应周    |
+| ---- | -------------------------------------------- | --------- |
+| v1   | 内存数组 + JSON 存储，命令行问答             | Week 3 ✅ |
+| v2   | Express API + Web UI + 引用来源 + 安全加固   | Week 4 ✅ |
+| v3   | Query 改写(默认) + 混合检索(可选) + 标题切分 | Week 5 ✅ |
