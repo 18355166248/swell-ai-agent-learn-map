@@ -1,32 +1,92 @@
 [
   {
     "id": 1,
-    "question": "图片上传到 CDN 的完整流程是什么？",
-    "expected_sources": ["upload-sdk.md"],
-    "notes": "应包含压缩、上传、替换路径三个步骤"
+    "difficulty": "simple",
+    "category": "factual",
+    "question": "access_token 的有效期是多久？过期后怎么处理？",
+    "expectedAnswer": "access_token 有效期 15 分钟，过期后使用 refresh_token 调用 /api/auth/refresh 续期。拦截器会自动完成续期，用户无感知。",
+    "expectedSources": ["auth-flow.md"],
+    "keywords": ["access_token", "15分钟", "refresh_token", "续期"]
   },
   {
     "id": 2,
-    "question": "活动分享按钮的埋点事件名是什么？",
-    "expected_sources": ["tracking-spec.md"],
-    "notes": "应包含事件名和必填参数"
+    "difficulty": "simple",
+    "category": "factual",
+    "question": "前端压缩图片时的默认参数是什么？",
+    "expectedAnswer": "默认最大宽度 1920px，quality 0.85。如果原图小于 1920px 则不缩放，只调整 quality。",
+    "expectedSources": ["upload-cdn.md"],
+    "keywords": ["1920px", "0.85", "压缩", "quality"]
   },
   {
     "id": 3,
-    "question": "弹窗组件在移动端需要注意什么？",
-    "expected_sources": ["component-guide.md"],
-    "notes": "应提到 safeArea 配置"
+    "difficulty": "simple",
+    "category": "factual",
+    "question": "InfiniteScroll 组件基于什么浏览器 API 实现？比传统方案好在哪里？",
+    "expectedAnswer": "基于 IntersectionObserver 实现，比传统 scroll 事件性能更好。距底部 100px 触发加载。",
+    "expectedSources": ["component-library.md"],
+    "keywords": ["IntersectionObserver", "scroll", "性能", "threshold", "100"]
   },
   {
     "id": 4,
-    "question": "如何在活动页初始化上传 SDK？",
-    "expected_sources": ["upload-sdk.md"],
-    "notes": "应包含初始化代码示例"
+    "difficulty": "medium",
+    "category": "procedural",
+    "question": "如果用户登录后长时间未操作，refresh_token 也过期了，系统会怎么处理？",
+    "expectedAnswer": "refresh_token 过期后会跳转登录页，清除用户状态。refresh_token 有效期 7 天，存储于 httpOnly Cookie，一旦被使用服务端会立即签发新 token 对并作废旧 token。",
+    "expectedSources": ["auth-flow.md"],
+    "keywords": ["refresh_token", "过期", "登录页", "7天", "httpOnly Cookie"]
   },
   {
     "id": 5,
-    "question": "图片上传前需要做哪些校验？",
-    "expected_sources": ["upload-sdk.md"],
-    "notes": "应包含大小限制、格式限制"
+    "difficulty": "medium",
+    "category": "procedural",
+    "question": "灰度发布的完整流程是怎样的？什么情况下会自动回滚？",
+    "expectedAnswer": "先在 staging 环境部署跑冒烟测试，然后生产环境按 10% → 50% → 100% 逐步放量，每次间隔 5 分钟观察 Sentry 错误率。错误率超过 0.5% 自动回滚到上一版本。回滚通过 OSS 保留最近 5 个版本、修改 CDN 回源指向实现。",
+    "expectedSources": ["deploy-cicd.md"],
+    "keywords": ["灰度", "10%", "50%", "100%", "5分钟", "0.5%", "回滚", "OSS"]
+  },
+  {
+    "id": 6,
+    "difficulty": "medium",
+    "category": "troubleshooting",
+    "question": "ImageViewer 组件在 Next.js SSR 项目中报错了，应该怎么解决？",
+    "expectedAnswer": "ImageViewer 依赖 Canvas/DOM，不支持 SSR。需要使用 next/dynamic 动态导入并设置 ssr: false 来禁用服务端渲染。除 ImageViewer 外，@swell/mobile-ui 的其他组件均支持 SSR。",
+    "expectedSources": ["component-library.md"],
+    "keywords": ["ImageViewer", "SSR", "next/dynamic", "ssr: false", "Canvas"]
+  },
+  {
+    "id": 7,
+    "difficulty": "medium",
+    "category": "rule",
+    "question": "项目中自定义 Hook 需要遵守哪些规范？",
+    "expectedAnswer": "必须以 use 开头，放在 src/hooks/ 目录下，文件名使用 camelCase。复杂逻辑需要 JSDoc 注释，必须返回对象或数组并保持一致的返回结构。优先使用自定义 Hook 封装业务逻辑，避免在组件中直接写复杂状态管理。",
+    "expectedSources": ["project-react-rules.md"],
+    "keywords": ["Hook", "use", "camelCase", "JSDoc", "封装"]
+  },
+  {
+    "id": 8,
+    "difficulty": "hard",
+    "category": "cross-doc",
+    "question": "上传图片的完整流程是怎样的？从用户选择图片到获取 CDN URL 的每一步。",
+    "expectedAnswer": "用户选择图片 → 前端 Canvas 压缩（最大宽度 1920px, quality 0.85）→ 调用 /api/upload/token 获取 OSS 临时凭证（有效期 1 小时）→ 使用 ali-oss SDK 上传到 OSS（设置 Cache-Control: public, max-age=31536000）→ CDN 回源拉取并缓存到边缘节点 → 返回 CDN URL（格式 https://cdn.example.com/{ossPath}）。失败时自动重试最多 3 次（间隔 1s/3s/5s），压缩超时 5 秒则跳过压缩直接上传。",
+    "expectedSources": ["upload-cdn.md"],
+    "keywords": ["压缩", "token", "OSS", "CDN", "回源", "重试"]
+  },
+  {
+    "id": 9,
+    "difficulty": "hard",
+    "category": "cross-doc",
+    "question": "TailwindCSS 在项目中的使用规范是什么？类名应该如何组织？",
+    "expectedAnswer": "优先使用 TailwindCSS，避免内联样式和 CSS 模块。类名顺序为布局→尺寸→间距→颜色→字体→其他。超过 3 个类名时使用多行格式。使用响应式前缀 sm/md/lg/xl/2xl 并遵循移动端优先原则。自定义主题配置放在 tailwind.config.js 中，使用 CSS 变量定义主题色。",
+    "expectedSources": ["project-react-rules.md"],
+    "keywords": ["TailwindCSS", "类名顺序", "多行格式", "响应式", "移动端优先"]
+  },
+  {
+    "id": 10,
+    "difficulty": "hard",
+    "category": "cross-doc",
+    "question": "CDN 缓存策略是怎样的？不同类型的文件缓存时间有何不同，为什么？",
+    "expectedAnswer": "静态资源（JS/CSS/图片等，文件名含 hash）缓存 1 年，因为 hash 保证更新时文件名会变化。HTML 文件缓存 5 分钟，确保用户能获取到最新版本。开启 Gzip/Brotli 压缩，CDN 加速区域为中国大陆 + 海外。图片上传时设置 Cache-Control: public, max-age=31536000 以充分利用 CDN 缓存。",
+    "expectedSources": ["deploy-cicd.md", "upload-cdn.md"],
+    "keywords": ["CDN", "缓存", "1年", "5分钟", "hash", "Cache-Control"]
   }
 ]
