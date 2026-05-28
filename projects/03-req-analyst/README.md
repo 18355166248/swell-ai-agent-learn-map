@@ -1,91 +1,82 @@
 # 项目 03：需求分析助手
 
 > 对应学习周次：Week 6
-> 当前状态：目录骨架已建，输出结构已定义，尚未开始实现
+> 当前状态：v1 已完成，支持结构化需求分析输出
 
-## 目标能力
+## 功能
 
-完成后预期支持：
+输入一段需求描述，AI 结合内部规范文档自动输出结构化分析：
+
+- 页面改动点
+- 接口依赖（已有/新增）
+- 埋点需求（page_view / click / exposure / biz_event）
+- 组件依赖
+- 风险点 + 缓解措施
+- 测试建议 + 优先级
+
+## 快速开始
 
 ```bash
-# 命令行：分析需求文本
-node cli.js "春节分享活动需要新增图片上传和分享海报能力"
-
-# 命令行：分析需求文档文件
-node cli.js --file ./prd.md
-
-# Web 界面
-npm start
+cd projects/03-req-analyst
+npm install
+npm run index    # 索引知识库文档
+npm start        # 启动服务 http://localhost:8082
 ```
 
-## 输出格式
+## 技术架构
 
-```json
-{
-  "pages": ["活动详情页需要新增上传入口", "分享海报弹窗（新增）"],
-  "interfaces": ["POST /api/activity/upload", "GET /api/poster/template"],
-  "tracking": [
-    { "event": "activity_upload_click", "params": ["activity_id", "channel"] },
-    { "event": "poster_share_click", "params": ["activity_id", "poster_type"] }
-  ],
-  "components": ["ImageUploader（复用）", "PosterModal（新增）"],
-  "risks": ["图片上传需处理超大文件", "海报生成可能有跨域问题"],
-  "testPoints": ["上传成功/失败流程", "海报分享各渠道测试", "弱网环境"],
-  "sources": [{ "file": "upload-spec.md", "lines": "12-18" }]
-}
+```
+用户需求文本
+  → Query 改写（关键词扩展）
+  → 混合检索（向量 + BM25 → RRF 融合）
+  → 检索到的规范文档 chunk + 需求文本
+  → LLM 结构化分析（JSON 输出，response_format: json_object）
+  → 前端卡片式展示
 ```
 
-## 当前目录状态
+## 知识库文档
 
-当前仓库内实际已有：
+| 文档              | 内容                   |
+| ----------------- | ---------------------- |
+| component-spec.md | 移动端组件库清单与用法 |
+| tracking-spec.md  | 埋点规范与自查清单     |
+| api-spec.md       | 接口通用格式与常用接口 |
+| payment-flow.md   | 支付业务流程与安全规范 |
+| release-flow.md   | 发布上线流程与灰度策略 |
+
+## API
+
+```
+POST /api/analyze
+Body: { "requirement": "需求描述文本" }
+Response: { pageChanges[], apiDependencies[], trackingRequirements[], componentDependencies[], risks[], testSuggestions[] }
+```
+
+## 目录结构
 
 ```text
 03-req-analyst/
-├── README.md
-├── docs/
-│   └── knowledge-base/
-│       └── .gitkeep
-├── examples/
-│   └── .gitkeep
-└── src/
-    └── .gitkeep
-```
-
-## 计划目录结构
-
-下面是后续实现目标：
-
-```text
-03-req-analyst/
-├── cli.js
 ├── src/
-│   ├── analyst.ts        # 核心分析逻辑
-│   ├── prompts.ts        # 结构化输出 Prompt
-│   └── server.ts         # Web 服务（可选）
+│   ├── analyst.ts        # 核心分析逻辑 + 结构化 Prompt
+│   ├── server.ts         # Express Web 服务
+│   └── index.ts          # 文档索引脚本
+├── public/
+│   └── index.html        # Web UI（输入需求 + 卡片式展示结果）
 ├── docs/
-│   └── knowledge-base/   # 内部规范文档
-│       ├── upload-spec.md
+│   └── knowledge-base/   # 5 个内部规范文档
+│       ├── component-spec.md
 │       ├── tracking-spec.md
-│       └── component-guide.md
-├── examples/             # 测试用需求案例
-│   ├── case-01.md
-│   └── case-02.md
-├── package.json
-└── .env.example
+│       ├── api-spec.md
+│       ├── payment-flow.md
+│       └── release-flow.md
+├── .data/
+│   └── vectors.json      # 向量索引（自动生成）
+└── package.json
 ```
 
 ## 迭代计划
 
-| 版本 | 功能                                    | 对应周 |
-| ---- | --------------------------------------- | ------ |
-| v1   | 接入真实文档，结构化分析输出            | Week 6 |
-| v2   | 集成到 dev-copilot，作为一个 Agent 工具 | Week 7 |
-
-## 开始实现时的建议步骤
-
-```bash
-cd projects/03-req-analyst
-# 1. 先复用 02-doc-rag 的索引与检索逻辑
-# 2. 再补 analyst.ts 和结构化输出 Prompt
-# 3. 最后补 CLI 或 Web 入口
-```
+| 版本 | 功能                                | 对应周    |
+| ---- | ----------------------------------- | --------- |
+| v1   | 结构化需求分析输出                  | Week 6 ✅ |
+| v2   | 集成到 dev-copilot，作为 Agent 工具 | Week 7 ⬜ |

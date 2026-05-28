@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>需求分析助手</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #f5f7fa;
+        color: #1a1a2e;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 32px 20px;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        background: linear-gradient(135deg, #f97316, #ef4444);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .subtitle {
+        font-size: 14px;
+        color: #6b7280;
+        margin-bottom: 24px;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        margin-bottom: 20px;
+      }
+      .card-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        color: #374151;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 120px;
+        padding: 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        line-height: 1.6;
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      textarea:focus {
+        border-color: #f97316;
+      }
+
+      .ask-row {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+        align-items: center;
+      }
+      .btn {
+        padding: 12px 28px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          opacity 0.2s;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #f97316, #ef4444);
+        color: #fff;
+      }
+      .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #ea580c, #dc2626);
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+        color: #6b7280;
+        font-size: 14px;
+      }
+      .loading.visible {
+        display: block;
+      }
+      .error-msg {
+        display: none;
+        padding: 12px 16px;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        color: #dc2626;
+        font-size: 13px;
+        margin-top: 12px;
+      }
+      .error-msg.visible {
+        display: block;
+      }
+
+      /* 分析结果 */
+      .result-box {
+        display: none;
+        margin-top: 16px;
+      }
+      .result-box.visible {
+        display: block;
+      }
+
+      .section {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-size: 15px;
+        font-weight: 700;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #374151;
+      }
+      .section-count {
+        font-size: 12px;
+        background: #fee2e2;
+        color: #ef4444;
+        border-radius: 12px;
+        padding: 2px 10px;
+        font-weight: 500;
+      }
+      .badge {
+        font-size: 11px;
+        border-radius: 4px;
+        padding: 2px 8px;
+        font-weight: 600;
+        display: inline-block;
+      }
+      .badge-high {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+      .badge-medium {
+        background: #fffbeb;
+        color: #d97706;
+      }
+      .badge-low {
+        background: #f0fdf4;
+        color: #16a34a;
+      }
+
+      .item {
+        padding: 12px 14px;
+        border-left: 3px solid #e5e7eb;
+        margin-bottom: 10px;
+        background: #f9fafb;
+        border-radius: 0 8px 8px 0;
+        font-size: 14px;
+      }
+      .item-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #1f2937;
+      }
+      .item-desc {
+        color: #6b7280;
+        line-height: 1.5;
+      }
+      .tag {
+        font-size: 11px;
+        background: #f3f4f6;
+        color: #6b7280;
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin-left: 8px;
+      }
+      .tag-new {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+      .tag-exist {
+        background: #f0fdf4;
+        color: #16a34a;
+      }
+
+      .preset-btns {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .preset-btn {
+        padding: 6px 14px;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        background: #fff;
+        font-size: 12px;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .preset-btn:hover {
+        border-color: #f97316;
+        color: #f97316;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>需求分析助手</h1>
+      <p class="subtitle">输入需求描述，AI 结合内部规范文档自动输出结构化分析</p>
+
+      <div class="card">
+        <div class="card-title">需求描述</div>
+        <div class="preset-btns" style="margin-bottom: 12px">
+          <button class="preset-btn" onclick="setPreset(0)">示例1: 优惠券选择页</button>
+          <button class="preset-btn" onclick="setPreset(1)">示例2: 分享功能优化</button>
+          <button class="preset-btn" onclick="setPreset(2)">示例3: 图片上传流程改造</button>
+        </div>
+        <textarea id="reqInput" placeholder="在此粘贴需求描述文本...">
+新增专辑详情页的优惠券选择功能：用户在购买专辑时可以看到可用优惠券列表，选择一张优惠券后自动计算优惠后价格，点击购买进入支付流程。</textarea
+        >
+        <div class="ask-row">
+          <button class="btn btn-primary" id="analyzeBtn" onclick="analyze()">开始分析</button>
+          <span style="font-size: 12px; color: #9ca3af">分析约需 5-10 秒</span>
+        </div>
+      </div>
+
+      <div class="loading" id="loading">正在检索规范文档并分析需求...</div>
+      <div class="error-msg" id="errorMsg"></div>
+
+      <div class="result-box" id="resultBox">
+        <div id="resultContent"></div>
+      </div>
+    </div>
+
+    <script>
+      const PRESETS = [
+        "新增专辑详情页的优惠券选择功能：用户在购买专辑时可以看到可用优惠券列表，选择一张优惠券后自动计算优惠后价格，点击购买进入支付流程。需要在支付面板上方展示优惠券选择区域。",
+        "优化现有分享功能：将分享面板从底部弹出改为全屏弹窗，新增分享海报生成功能（用户可保存图片分享到朋友圈）。分享成功后要上报分享结果到服务端。",
+        "改造图片上传流程：用户选择图片后先进行前端裁剪（支持 1:1、4:3、16:9 三种比例），裁剪完成后再压缩上传。上传过程中显示实时进度条，支持取消上传。",
+      ];
+
+      function setPreset(idx) {
+        document.getElementById("reqInput").value = PRESETS[idx];
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function renderSection(title, items, renderItem) {
+        if (!items || items.length === 0) return "";
+        return `<div class="section">
+      <div class="section-title">${title} <span class="section-count">${items.length}</span></div>
+      ${items.map(renderItem).join("")}
+    </div>`;
+      }
+
+      function renderResult(data) {
+        let html = "";
+
+        html += renderSection(
+          "页面改动点",
+          data.pageChanges,
+          (item) =>
+            `<div class="item">
+        <div class="item-title">${escapeHtml(item.page)}</div>
+        <div class="item-desc">${escapeHtml(item.changes)}</div>
+      </div>`,
+        );
+
+        html += renderSection(
+          "接口依赖",
+          data.apiDependencies,
+          (item) =>
+            `<div class="item">
+        <div class="item-title">
+          ${escapeHtml(item.endpoint)}
+          <span class="tag ${item.isNew ? "tag-new" : "tag-exist"}">${item.isNew ? "新增" : "已有"}</span>
+        </div>
+        <div class="item-desc">${escapeHtml(item.usage)}</div>
+      </div>`,
+        );
+
+        html += renderSection(
+          "埋点需求",
+          data.trackingRequirements,
+          (item) =>
+            `<div class="item">
+        <div class="item-title">
+          ${escapeHtml(item.moduleId)}
+          <span class="tag">${escapeHtml(item.eventType)}</span>
+        </div>
+        <div class="item-desc">${escapeHtml(item.description)}</div>
+      </div>`,
+        );
+
+        html += renderSection(
+          "组件依赖",
+          data.componentDependencies,
+          (item) =>
+            `<div class="item">
+        <div class="item-title">${escapeHtml(item.component)}</div>
+        <div class="item-desc">${escapeHtml(item.usage)}</div>
+      </div>`,
+        );
+
+        html += renderSection(
+          "风险点",
+          data.risks,
+          (item) =>
+            `<div class="item">
+        <div class="item-title">
+          ${escapeHtml(item.risk)}
+          <span class="badge badge-${item.level}">${item.level}</span>
+        </div>
+        <div class="item-desc">缓解: ${escapeHtml(item.mitigation)}</div>
+      </div>`,
+        );
+
+        html += renderSection(
+          "测试建议",
+          data.testSuggestions,
+          (item) =>
+            `<div class="item">
+        <div class="item-title">
+          ${escapeHtml(item.scenario)}
+          <span class="badge badge-${item.priority}">${item.priority}</span>
+        </div>
+      </div>`,
+        );
+
+        return html;
+      }
+
+      async function analyze() {
+        const input = document.getElementById("reqInput");
+        const requirement = input.value.trim();
+        if (!requirement) return;
+
+        const resultBox = document.getElementById("resultBox");
+        const resultContent = document.getElementById("resultContent");
+        const loading = document.getElementById("loading");
+        const errorMsg = document.getElementById("errorMsg");
+        const analyzeBtn = document.getElementById("analyzeBtn");
+
+        resultBox.classList.remove("visible");
+        errorMsg.classList.remove("visible");
+        loading.classList.add("visible");
+        analyzeBtn.disabled = true;
+
+        try {
+          const res = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requirement }),
+          });
+
+          const contentType = res.headers.get("content-type") || "";
+          if (!contentType.includes("application/json")) {
+            const text = await res.text();
+            throw new Error(`非 JSON 响应: ${text.slice(0, 200)}`);
+          }
+
+          const data = await res.json();
+          if (!res.ok) {
+            errorMsg.textContent = data.error || "分析失败";
+            errorMsg.classList.add("visible");
+            return;
+          }
+
+          resultContent.innerHTML = renderResult(data);
+          resultBox.classList.add("visible");
+        } catch (e) {
+          errorMsg.textContent = `请求失败: ${e.message}`;
+          errorMsg.classList.add("visible");
+        } finally {
+          loading.classList.remove("visible");
+          analyzeBtn.disabled = false;
+        }
+      }
+
+      document.getElementById("reqInput").addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") analyze();
+      });
+    </script>
+  </body>
+</html>
