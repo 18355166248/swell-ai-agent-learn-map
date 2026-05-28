@@ -1,28 +1,21 @@
 {
-  "name": "doc-rag",
+  "name": "dev-copilot",
   "version": "1.0.0",
-  "description": "文档 RAG 问答系统 - 向量化检索 + LLM 回答",
+  "description": "AI Dev Copilot — Agent + 工具调用",
   "type": "module",
-  "exports": {
-    ".": "./dist/public.js"
-  },
-  "types": "./dist/public.d.ts",
   "scripts": {
-    "build": "tsc",
-    "index": "tsx src/index.ts",
-    "ask": "tsx src/ask.ts",
+    "cli": "tsx cli.ts",
     "start": "tsx src/server.ts",
     "test": "vitest run"
   },
   "dependencies": {
+    "doc-rag": "file:../02-doc-rag",
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
-    "multer": "^2.1.1",
     "openai": "^4.73.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
-    "@types/multer": "^2.1.0",
     "@types/node": "^22.0.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Dev Copilot</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f7fa; color: #1a1a2e; min-height: 100vh; display: flex; flex-direction: column;
+    }
+    .header {
+      background: #fff; border-bottom: 1px solid #e5e7eb;
+      padding: 16px 24px; display: flex; align-items: center; gap: 12px;
+    }
+    .header h1 {
+      font-size: 20px; font-weight: 700;
+      background: linear-gradient(135deg, #f97316, #ef4444);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header .badge { font-size: 11px; background: #fee2e2; color: #ef4444; border-radius: 10px; padding: 2px 10px; }
+
+    .main { flex: 1; display: flex; max-width: 1200px; margin: 0 auto; width: 100%; padding: 20px; gap: 20px; }
+    .sidebar { width: 320px; flex-shrink: 0; }
+    .chat-area { flex: 1; min-width: 0; }
+
+    .card {
+      background: #fff; border-radius: 12px; padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px;
+    }
+    .card-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: #374151; }
+
+    textarea {
+      width: 100%; min-height: 100px; padding: 12px;
+      border: 1px solid #e5e7eb; border-radius: 8px;
+      font-size: 14px; font-family: inherit; line-height: 1.6;
+      resize: vertical; outline: none; transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: #f97316; }
+
+    .btn {
+      padding: 10px 24px; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: linear-gradient(135deg, #f97316, #ef4444); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: linear-gradient(135deg, #ea580c, #dc2626); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border: 1px solid #e5e7eb; border-radius: 20px; background: #fff; color: #6b7280; cursor: pointer; }
+    .btn-sm:hover { border-color: #f97316; color: #f97316; }
+
+    .preset-list { display: flex; flex-direction: column; gap: 6px; }
+    .preset-item { padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 12px; color: #6b7280; cursor: pointer; transition: all 0.2s; }
+    .preset-item:hover { border-color: #f97316; color: #f97316; background: #fff7ed; }
+
+    .messages { display: flex; flex-direction: column; gap: 12px; min-height: 400px; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #9ca3af; font-size: 14px; }
+
+    .msg { border-radius: 10px; padding: 14px 16px; font-size: 14px; line-height: 1.6; animation: fadeIn 0.3s; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .msg-tool-call { border: 1px solid #fed7aa; background: #fff7ed; }
+    .msg-tool-result { border: 1px solid #e5e7eb; background: #f9fafb; }
+    .msg-answer { border: 1px solid #bbf7d0; background: #f0fdf4; }
+    .msg-error { border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; }
+
+    .msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+    .msg-badge { font-size: 11px; border-radius: 4px; padding: 1px 8px; font-weight: 600; }
+    .badge-tool { background: #fed7aa; color: #c2410c; }
+    .badge-step { background: #e0e7ff; color: #4338ca; }
+
+    .tool-result-content {
+      max-height: 200px; overflow-y: auto; background: #1e293b; color: #e2e8f0;
+      padding: 12px; border-radius: 6px; font-size: 12px; font-family: "SF Mono", "Cascadia Code", monospace;
+      white-space: pre-wrap; line-height: 1.5; margin-top: 8px;
+    }
+    .tool-result-content.collapsed { display: none; }
+    .toggle-btn { font-size: 11px; color: #6366f1; cursor: pointer; background: none; border: none; margin-top: 6px; }
+    .toggle-btn:hover { text-decoration: underline; }
+
+    .loading-spinner {
+      display: none; align-items: center; gap: 10px; padding: 12px 16px;
+      border: 1px solid #fed7aa; border-radius: 10px; background: #fff7ed; font-size: 13px; color: #c2410c;
+    }
+    .loading-spinner.visible { display: flex; }
+    .spinner { width: 18px; height: 18px; border: 2px solid #fed7aa; border-top-color: #f97316; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-toast { display: none; padding: 12px 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; font-size: 13px; margin-top: 12px; }
+    .error-toast.visible { display: block; }
+
+    .actions-row { display: flex; gap: 8px; align-items: center; margin-top: 12px; }
+    .status-text { font-size: 12px; color: #9ca3af; }
+
+    @media (max-width: 768px) {
+      .main { flex-direction: column; }
+      .sidebar { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>AI Dev Copilot</h1>
+  <span class="badge">Week 7</span>
+</div>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-title">任务描述</div>
+      <textarea id="taskInput" placeholder="输入任务描述，Agent 将自动调用工具分析..."></textarea>
+      <div class="actions-row">
+        <button class="btn btn-primary" id="runBtn" onclick="runTask()">开始分析</button>
+        <span class="status-text" id="statusText"></span>
+      </div>
+      <div class="error-toast" id="errorToast"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">预设示例</div>
+      <div class="preset-list">
+        <div class="preset-item" onclick="setPreset(0)">分析这个项目有哪些 Express 服务</div>
+        <div class="preset-item" onclick="setPreset(1)">查看所有项目的 package.json 配置</div>
+        <div class="preset-item" onclick="setPreset(2)">搜索所有包含 upload 相关的代码和文档</div>
+        <div class="preset-item" onclick="setPreset(3)">分析 03-req-analyst 项目的架构设计</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <div class="card">
+      <div class="messages" id="messages">
+        <div class="empty-state" id="emptyState">
+          输入任务描述并点击「开始分析」<br>
+          Agent 将自动调用工具逐步推理
+        </div>
+      </div>
+      <div class="loading-spinner" id="loading">
+        <div class="spinner"></div>
+        <span id="loadingText">正在分析...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const PRESETS = [
+    "分析这个项目有哪些 Express 服务（搜索 server.ts 文件并查看其端口配置）",
+    "查看所有项目的 package.json 配置，总结各项目的依赖差异",
+    "搜索所有包含 upload 相关的代码和文档，总结上传功能的实现",
+    "分析 03-req-analyst 项目的架构设计，列出核心模块和它们的关系",
+  ];
+
+  let running = false;
+  let stepSeq = 0;
+  let currentToolCard = null;
+
+  function setPreset(idx) {
+    document.getElementById("taskInput").value = PRESETS[idx];
+  }
+
+  function showError(msg) {
+    const el = document.getElementById("errorToast");
+    el.textContent = msg;
+    el.classList.add("visible");
+    setTimeout(() => el.classList.remove("visible"), 6000);
+  }
+
+  function setLoading(visible, text) {
+    const el = document.getElementById("loading");
+    if (visible) el.classList.add("visible"); else el.classList.remove("visible");
+    document.getElementById("loadingText").textContent = text || "正在分析...";
+    document.getElementById("runBtn").disabled = visible;
+    document.getElementById("statusText").textContent = visible ? "执行中..." : "";
+  }
+
+  function hideEmpty() {
+    const el = document.getElementById("emptyState");
+    if (el) { el.style.display = "none"; el.id = ""; }
+  }
+
+  function createMsg(type) {
+    hideEmpty();
+    const div = document.createElement("div");
+    div.className = "msg " + type;
+    document.getElementById("messages").appendChild(div);
+    return div;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function renderToolCall(toolName, toolArgs) {
+    const div = createMsg("msg-tool-call");
+    const badge = toolName.replace(/_/g, " ");
+    div.innerHTML = `<div class="msg-header">
+      <span class="msg-badge badge-tool">调用工具</span>
+      <span class="msg-badge badge-step">步骤 ${++stepSeq}</span>
+      <strong>${escapeHtml(toolName)}</strong>
+    </div>`;
+    if (toolArgs && Object.keys(toolArgs).length > 0) {
+      const argsDiv = document.createElement("div");
+      argsDiv.className = "tool-result-content";
+      argsDiv.textContent = JSON.stringify(toolArgs, null, 2);
+      argsDiv.style.maxHeight = "80px";
+      div.appendChild(argsDiv);
+    }
+    return div;
+  }
+
+  function renderToolResult(toolName, content) {
+    const div = document.getElementById("messages").lastElementChild;
+    if (!div || !div.classList.contains("msg-tool-call")) return;
+
+    const container = document.createElement("div");
+    container.style.marginTop = "8px";
+    container.innerHTML = `<div class="msg-header"><span class="msg-badge badge-tool">返回结果</span></div>`;
+
+    const resultDiv = document.createElement("div");
+    resultDiv.className = "tool-result-content collapsed";
+    resultDiv.textContent = content;
+
+    const toggle = document.createElement("button");
+    toggle.className = "toggle-btn";
+    toggle.textContent = "展开结果";
+    toggle.onclick = () => {
+      const isCollapsed = resultDiv.classList.contains("collapsed");
+      if (isCollapsed) {
+        resultDiv.classList.remove("collapsed");
+        toggle.textContent = "收起结果";
+      } else {
+        resultDiv.classList.add("collapsed");
+        toggle.textContent = "展开结果";
+      }
+    };
+
+    container.appendChild(resultDiv);
+    container.appendChild(toggle);
+    div.appendChild(container);
+  }
+
+  function renderAnswer(content) {
+    const div = createMsg("msg-answer");
+    div.innerHTML = `<div class="msg-header">
+      <span class="msg-badge badge-step">步骤 ${++stepSeq}</span>
+      <strong>最终答案</strong>
+    </div>
+    <div style="white-space: pre-wrap; line-height: 1.7;">${escapeHtml(content)}</div>`;
+  }
+
+  function renderError(content) {
+    const div = createMsg("msg-error");
+    div.innerHTML = `<div class="msg-header"><strong>错误</strong></div>
+    <div>${escapeHtml(content)}</div>`;
+  }
+
+  async function runTask() {
+    const input = document.getElementById("taskInput");
+    const task = input.value.trim();
+    if (!task || running) return;
+
+    running = true;
+    stepSeq = 0;
+    hideEmpty();
+    setLoading(true, "分析任务中...");
+    document.getElementById("errorToast").classList.remove("visible");
+
+    // 优先尝试 SSE 流式
+    try {
+      await runStream(task);
+    } catch {
+      // 回退到同步模式
+      try {
+        setLoading(true, "SSE 不可用，使用同步模式...");
+        await runSync(task);
+      } catch (e) {
+        showError(`请求失败: ${e.message}`);
+      }
+    } finally {
+      setLoading(false);
+      running = false;
+    }
+  }
+
+  async function runStream(task) {
+    return new Promise((resolve, reject) => {
+      const es = new EventSource(`/api/agent/stream?task=${encodeURIComponent(task)}`);
+
+      es.addEventListener("step", (e) => {
+        const data = JSON.parse(e.data);
+        renderToolCall(data.toolName, data.toolArgs);
+      });
+
+      es.addEventListener("result", (e) => {
+        const data = JSON.parse(e.data);
+        renderToolResult(data.toolName, data.content);
+      });
+
+      es.addEventListener("answer", (e) => {
+        const data = JSON.parse(e.data);
+        renderAnswer(data.content);
+        setLoading(false);
+      });
+
+      es.addEventListener("done", () => {
+        es.close();
+        resolve();
+      });
+
+      es.addEventListener("error", (e) => {
+        if (es.readyState === EventSource.CLOSED) {
+          setLoading(false);
+          resolve();
+        } else {
+          // 连接错误，回退
+          es.close();
+          reject(new Error("SSE connection failed"));
+        }
+      });
+
+      es.onerror = () => {
+        if (es.readyState === EventSource.CLOSED) {
+          setLoading(false);
+          resolve();
+        }
+      };
+    });
+  }
+
+  async function runSync(task) {
+    const res = await fetch("/api/agent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ task }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      renderError(data.error || `HTTP ${res.status}`);
+      return;
+    }
+
+    const data = await res.json();
+
+    // 渲染步骤
+    for (const step of data.steps) {
+      if (step.action) {
+        renderToolCall(step.action.name, step.action.args);
+        if (step.observation) {
+          renderToolResult(step.action.name, step.observation);
+        }
+      }
+    }
+
+    renderAnswer(data.answer);
+    document.getElementById("statusText").textContent = `完成: ${data.iterations} 轮`;
+  }
+
+  document.getElementById("taskInput").addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") runTask();
+  });
+</script>
+</body>
+</html>

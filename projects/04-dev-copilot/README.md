@@ -1,108 +1,139 @@
-# 项目 04：前端研发知识库助手（最终作品）
+# 项目 04：AI Dev Copilot — 前端研发知识库助手
 
 > 对应学习周次：Week 7–8
-> 别名：AI Dev Copilot for Frontend Workflow
-> 当前状态：只有目录骨架和设计说明，尚未开始实现
+> 当前状态：**v1 已完成** — Agent + 5 工具 + CLI + Web UI
 
 ## 这是什么
 
-把前 3 个项目的能力整合在一起，做成一个真正服务日常开发的 AI 工具。
+一个 ReAct Agent，通过自主调用只读工具来帮助开发者分析项目和文档。
 
 ```
-你：帮我分析这个需求需要改哪些文件
+你：分析这个项目有哪些 Express 服务
 
 Agent：
-  [查文档] 检索上传规范 → 需要用 uploadImage SDK
-  [查代码] 搜索 activity 相关文件 → 找到 3 个相关文件
-  [读文件] 读取 hooks/useUpload.ts → 确认现有实现
-  [分析]   结合需求和现有代码，输出改动方案
+  [调用 list_files]  查看项目目录结构
+  [调用 search_code] 搜索 server.ts 文件
+  [调用 read_file]   读取服务器配置
+  [分析]             输出: 3 个 Express 服务 (8081/8082/8083)
 ```
 
-## 核心能力
+## 核心能力（v1 已完成）
 
-| 能力     | 描述                                       |
-| -------- | ------------------------------------------ |
-| 文档问答 | 查内部规范，带引用来源                     |
-| 需求分析 | 输入需求，输出改动点/接口/埋点/风险/测试点 |
-| 代码检索 | 按语义找相关文件和代码片段                 |
-| 方案生成 | Agent 多步推理，自动生成开发方案           |
+| 能力           | 工具                                      | 状态 |
+| -------------- | ----------------------------------------- | ---- |
+| 浏览项目结构   | `list_files` — 列出目录、支持模式过滤     | ✅   |
+| 读取文件内容   | `read_file` — 行号切片、路径安全          | ✅   |
+| 关键词搜索代码 | `search_code` — 搜索 .ts/.tsx/.js 等      | ✅   |
+| 正则表达式搜索 | `grep` — 支持上下文行                     | ✅   |
+| 语义文档检索   | `search_docs` — RAG 混合检索（向量+BM25） | ✅   |
+| 多步推理       | Agent ReAct 循环 — 自动工具调用链         | ✅   |
+| CLI 入口       | `tsx cli.ts "任务"` — 终端彩色输出        | ✅   |
+| Web 界面       | Express + SSE 流式 — 聊天式 UI            | ✅   |
+| 自动化测试     | Vitest — 路径安全 / glob / Agent 轮次语义 | ✅   |
 
-## 当前目录状态
-
-当前仓库内实际已有：
-
-```text
-04-dev-copilot/
-├── README.md
-├── docs/
-│   └── knowledge-base/
-│       └── .gitkeep
-└── src/
-    └── .gitkeep
-```
-
-## 计划目录结构
-
-下面是 Week 7–8 的目标实现结构：
-
-```text
-04-dev-copilot/
-├── cli.js                    # 命令行入口
-├── src/
-│   ├── agent/
-│   │   ├── index.ts          # Agent 主循环（ReAct）
-│   │   ├── tools/
-│   │   │   ├── readFile.ts
-│   │   │   ├── listFiles.ts
-│   │   │   ├── searchCode.ts
-│   │   │   ├── searchDocs.ts
-│   │   │   └── grep.ts
-│   │   └── prompts.ts
-│   ├── rag/                  # 复用 02-doc-rag 的逻辑
-│   │   ├── indexer.ts
-│   │   └── retriever.ts
-│   ├── analyst/              # 复用 03-req-analyst 的逻辑
-│   │   └── analyze.ts
-│   └── server.ts             # Web 服务
-├── public/
-│   └── index.html            # Web UI
-├── docs/
-│   └── knowledge-base/       # 内部文档（勿提交敏感内容）
-├── .data/
-│   └── vectors.json          # 向量存储（自动生成，勿提交）
-├── package.json
-└── .env.example
-```
-
-## 迭代计划
-
-| 版本 | 功能                                         | 对应周 |
-| ---- | -------------------------------------------- | ------ |
-| v1   | 只读工具 Agent（read/list/search）+ 需求分析 | Week 7 |
-| v2   | 功能整合 + Web UI + 引用来源 + 技术分享版本  | Week 8 |
-
-## 目标使用方式
-
-下面这些命令是最终希望支持的使用方式，不代表当前已经能运行：
+## 快速开始
 
 ```bash
 cd projects/04-dev-copilot
-# 建立索引
-npm run index
 
-# 命令行使用
-node cli.js "帮我分析这个需求需要改哪些文件"
+# CLI 模式
+npx tsx cli.ts "分析这个项目有哪些工具函数"
+npx tsx cli.ts --model openai/gpt-4o "搜索埋点相关代码"
 
-# Web 界面
-npm start
+# Web 模式
+npx tsx src/server.ts        # 启动 → http://localhost:8083
 ```
 
-## 业务价值（技术分享用）
+## 技术架构
 
 ```
-场景              传统方式          使用后
-需求分析          30 分钟人工梳理   5 分钟 AI 输出初稿
-查内部文档        翻 Confluence     自然语言直接问
-新人熟悉代码      1 周看代码        随时问随时答
-规范一致性        靠人记忆          AI 自动带出规范引用
+cli.ts / Web UI
+    │
+    └── runAgent() — ReAct 循环
+         │
+    ┌────┴────┐
+    │  OpenAI  │  function calling
+    │  Chat    │  (支持 OpenRouter)
+    └────┬────┘
+         │
+    ┌────┴────────────┐
+    │  Tool Registry  │
+    │  5 只读工具      │
+    └────┬────────────┘
+         │
+    ┌────┴─────────────────────────┐
+    │  fs / doc-rag workspace 包    │
+    └──────────────────────────────┘
 ```
+
+## Agent 循环（ReAct 模式）
+
+```
+用户任务 → messages[system, user]
+  while (迭代 < 10):
+    response = LLM(messages, tools)
+    if 最终答案 → 返回
+    if tool_calls:
+      执行工具 → 追加 tool results
+      继续循环
+  → 强制总结
+```
+
+## 目录结构
+
+```text
+04-dev-copilot/
+├── cli.ts                       # CLI 入口
+├── package.json
+├── tsconfig.json
+├── src/
+│   ├── agent/
+│   │   ├── index.ts             # Agent 主循环 (ReAct)
+│   │   ├── prompts.ts           # 系统 Prompt
+│   │   └── tools/
+│   │       ├── registry.ts      # 工具注册表
+│   │       ├── readFile.ts      # 读文件 (路径安全 + 行号切片)
+│   │       ├── listFiles.ts     # 列目录 (递归 + pattern 过滤)
+│   │       ├── searchCode.ts    # 关键词搜索代码
+│   │       ├── searchDocs.ts    # RAG 文档检索 (合并多向量库)
+│   │       └── grep.ts          # 正则搜索 (上下文行)
+│   └── server.ts                # Express + SSE 流式
+├── public/
+│   └── index.html               # 聊天式 Web UI
+└── .data/                       # 向量索引（gitignore）
+```
+
+## API
+
+```
+POST /api/agent
+Body: { "task": "任务描述" }
+Response: { answer, steps[], iterations }
+
+GET /api/agent/stream?task=...
+SSE events: step / result / answer / done / error
+说明: 当前流式事件展示的是工具执行轨迹和最终答案，不暴露模型原始思维链
+
+GET /api/health
+Response: { "status": "ok" }
+```
+
+## 复用模块
+
+| 来源             | 模块                     | 用途                        |
+| ---------------- | ------------------------ | --------------------------- |
+| `02-doc-rag`     | `doc-rag` workspace 导出 | 对外暴露检索与 RAG 公共接口 |
+| `03-req-analyst` | 知识库文档               | 5 个规范文档的向量索引      |
+
+## 已知限制
+
+- **免费模型** `openai/gpt-oss-120b:free` 偶尔不调用工具直接回答，换成 `gpt-4o` 效果显著提升
+- `search_docs` 合并了两个向量库（02 + 03），不区分来源项目
+- `search_docs` 通过 `doc-rag` workspace 包复用能力，但向量索引仍来自 02 / 03 两个项目
+
+## 迭代计划
+
+| 版本 | 功能                                     | 对应周 | 状态 |
+| ---- | ---------------------------------------- | ------ | ---- |
+| v1   | 5 个只读工具 + Agent 循环 + CLI + Web UI | Week 7 | ✅   |
+| v2   | 功能整合 + Prompt 调优 + 技术分享版本    | Week 8 | ⬜   |

@@ -61,6 +61,11 @@ export interface RagOptions {
   model?: string;
 }
 
+interface ScoredChunk {
+  entry: VectorEntry;
+  score: number;
+}
+
 /**
  * 执行 RAG 问答：嵌入问题 → 检索 → 构建 Prompt → LLM 回答。
  * 返回结构化结果（答案 + 引用来源）。
@@ -81,16 +86,21 @@ export async function askWithRag(
   const queryEmbedding = await getEmbedding(searchQuery);
   const vectorResults = retrieve(queryEmbedding, vectors, options.hybrid ? TOP_K * 2 : TOP_K);
 
-  let results: { entry: VectorEntry; similarity: number }[];
+  let results: ScoredChunk[];
 
   if (options.hybrid) {
     // 混合检索：向量 + BM25 → RRF 融合
     const bm25 = new BM25Search(vectors);
     const keywordResults = bm25.search(question, TOP_K * 2);
-    results = hybridRetrieve(vectorResults, keywordResults, TOP_K);
-    // 混合检索的 score 是 RRF 归一化值，标记为 similarity 供前端展示
+    results = hybridRetrieve(vectorResults, keywordResults, TOP_K).map((result) => ({
+      entry: result.entry,
+      score: result.score,
+    }));
   } else {
-    results = vectorResults;
+    results = vectorResults.map((result) => ({
+      entry: result.entry,
+      score: result.similarity,
+    }));
   }
 
   const chunks = results.map((r) => r.entry.chunk);
@@ -112,7 +122,7 @@ export async function askWithRag(
     file: r.entry.source,
     index: r.entry.index,
     excerpt: r.entry.chunk.slice(0, 200),
-    similarity: Number(((r as any).similarity ?? (r as any).score ?? 0).toFixed(4)),
+    similarity: Number(r.score.toFixed(4)),
   }));
 
   return { answer, sources };
