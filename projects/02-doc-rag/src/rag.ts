@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import { getEmbedding } from "./embedder.js";
 import { rewriteQuery } from "./query-rewriter.js";
 import { retrieve, type VectorEntry } from "./retriever.js";
+import { BM25Search, hybridRetrieve } from "./keyword-search.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "..", "..", "..", ".env"), override: false });
@@ -52,8 +53,10 @@ ${context}
 }
 
 export interface RagOptions {
-  /** 是否启用 Query 改写（扩展为检索友好的查询），默认 false */
+  /** 是否启用 Query 改写，默认 false */
   rewrite?: boolean;
+  /** 是否启用混合检索（向量 + BM25 关键词），默认 false */
+  hybrid?: boolean;
   /** LLM 模型名，不传则使用默认值 */
   model?: string;
 }
@@ -72,11 +75,23 @@ export async function askWithRag(
   if (options.rewrite) {
     const expanded = await rewriteQuery(question, options.model);
     searchQuery = `${question} | ${expanded}`;
-    console.log("searchQuery", searchQuery);
   }
 
+  // 向量检索
   const queryEmbedding = await getEmbedding(searchQuery);
-  const results = retrieve(queryEmbedding, vectors, TOP_K);
+  const vectorResults = retrieve(queryEmbedding, vectors, options.hybrid ? TOP_K * 2 : TOP_K);
+
+  let results: { entry: VectorEntry; similarity: number }[];
+
+  if (options.hybrid) {
+    // 混合检索：向量 + BM25 → RRF 融合
+    const bm25 = new BM25Search(vectors);
+    const keywordResults = bm25.search(question, TOP_K * 2);
+    results = hybridRetrieve(vectorResults, keywordResults, TOP_K);
+    // 混合检索的 score 是 RRF 归一化值，标记为 similarity 供前端展示
+  } else {
+    results = vectorResults;
+  }
 
   const chunks = results.map((r) => r.entry.chunk);
   const prompt = buildPrompt(question, chunks);
@@ -97,7 +112,7 @@ export async function askWithRag(
     file: r.entry.source,
     index: r.entry.index,
     excerpt: r.entry.chunk.slice(0, 200),
-    similarity: Number(r.similarity.toFixed(4)),
+    similarity: Number(((r as any).similarity ?? (r as any).score ?? 0).toFixed(4)),
   }));
 
   return { answer, sources };

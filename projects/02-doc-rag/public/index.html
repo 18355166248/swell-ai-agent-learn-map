@@ -329,6 +329,11 @@
             <span class="rewrite-switch"></span>
             <span>改写</span>
           </label>
+          <label class="rewrite-toggle" title="启用向量+关键词混合检索 (BM25)">
+            <input type="checkbox" id="hybridCheck" />
+            <span class="rewrite-switch"></span>
+            <span>混合</span>
+          </label>
           <button class="btn btn-primary" id="askBtn" onclick="askQuestion()">提问</button>
         </div>
         <div class="loading" id="loading">正在检索并生成答案...</div>
@@ -410,6 +415,7 @@
             body: JSON.stringify({
               question,
               rewrite: document.getElementById("rewriteCheck").checked,
+              hybrid: document.getElementById("hybridCheck").checked,
             }),
           });
           const data = await safeJson(res);

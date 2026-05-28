@@ -122,7 +122,7 @@ async function runIndex(): Promise<number> {
 // POST /api/ask — RAG 问答
 app.post("/api/ask", async (req, res) => {
   try {
-    const { question, rewrite } = req.body;
+    const { question, rewrite, hybrid } = req.body;
     if (!question || typeof question !== "string") {
       res.status(400).json({ error: "请提供 question 字段" });
       return;
@@ -134,7 +134,10 @@ app.post("/api/ask", async (req, res) => {
       return;
     }
 
-    const result = await askWithRag(question.trim(), vectors, { rewrite: !!rewrite });
+    const result = await askWithRag(question.trim(), vectors, {
+      rewrite: !!rewrite,
+      hybrid: !!hybrid,
+    });
     res.json(result);
   } catch (err: any) {
     console.error("问答失败:", err.message);
