@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "name": "phase-2a-eval-template",
+    "description": "Template for evaluating RAG and agent tasks in the AI Native learning map.",
+    "version": "0.1.0"
+  },
+  "tasks": [
+    {
+      "id": "rag-001",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "示例：上传图片到 CDN 的完整流程是什么？",
+      "expectedSources": ["upload-cdn.md"],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "先从真实文档问答类问题开始。"
+    },
+    {
+      "id": "agent-001",
+      "type": "agent",
+      "targetProject": "04-dev-copilot",
+      "question": "示例：分析这个项目里 RAG 和 Agent 分别负责什么。",
+      "expectedTools": ["search_docs", "read_file"],
+      "checks": {
+        "tool_path_ok": true,
+        "constraint_ok": true,
+        "task_completed": true
+      },
+      "notes": "关注有没有正确区分知识检索和任务编排。"
+    }
+  ]
+}

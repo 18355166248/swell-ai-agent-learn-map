@@ -1,0 +1,9 @@
+{
+  "name": "agent-eval",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Evaluation lab for RAG and agent tasks in the AI Native learning map.",
+  "scripts": {
+    "todo": "echo \"Week 9 / Phase 2A: evaluation implementation not started yet\""
+  }
+}

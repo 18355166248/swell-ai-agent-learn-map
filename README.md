@@ -75,10 +75,22 @@ swell-ai-agent-learn-map/
 | 整体路线     | `ROADMAP.md`                   |
 | 当前进度     | `PROGRESS.md`                  |
 | 阶段总结     | `docs/stages/README.md`        |
+| 下一阶段方向 | `docs/next-phase-direction.md` |
 | 技术决策     | `docs/decisions/tech-stack.md` |
 | 概念现状     | `docs/concepts/README.md`      |
 | 实验记录     | `experiments/`                 |
 | 下一阶段路线 | `ROADMAP.md`                   |
+
+## 当前推荐阅读顺序
+
+如果第一次看这个仓库，建议先看“成长路径”，再看“阶段项目”：
+
+1. [README.md](./README.md)
+2. [docs/learning-summary.md](./docs/learning-summary.md)
+3. [docs/stages/README.md](./docs/stages/README.md)
+4. [docs/next-phase-direction.md](./docs/next-phase-direction.md)
+5. [ROADMAP.md](./ROADMAP.md)
+6. 最后再看 `projects/01` 到 `projects/05`
 
 ## 最终目标
 
