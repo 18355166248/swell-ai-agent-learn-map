@@ -1,7 +1,7 @@
 # 项目 04：AI Dev Copilot — 前端研发知识库助手
 
 > 对应学习周次：Week 7–8
-> 当前状态：**v1 已完成** — Agent + 5 工具 + CLI + Web UI
+> 当前状态：**v1 已完成，Week 8 分享版已收口** — Agent + 5 工具 + CLI + Web UI + 分享材料
 
 ## 这是什么
 
@@ -35,6 +35,7 @@ Agent：
 
 ```bash
 cd projects/04-dev-copilot
+npm test
 
 # CLI 模式
 npx tsx cli.ts "分析这个项目有哪些工具函数"
@@ -43,6 +44,12 @@ npx tsx cli.ts --model openai/gpt-4o "搜索埋点相关代码"
 # Web 模式
 npx tsx src/server.ts        # 启动 → http://localhost:8083
 ```
+
+环境要求：
+
+- 根目录 `.env` 中已配置 `OPENAI_API_KEY`
+- 如果使用 OpenRouter，建议同时配置 `OPENAI_BASE_URL`
+- 正式演示优先使用稳定模型，不建议把免费模型作为唯一方案
 
 ## 技术架构
 
@@ -118,6 +125,17 @@ GET /api/health
 Response: { "status": "ok" }
 ```
 
+## 演示建议
+
+推荐先跑 Web UI，再用 CLI 作为兜底：
+
+1. 启动服务后在浏览器输入“分析这个项目有哪些工具函数”
+2. 观察它先列目录、再读注册表、再归纳 5 个工具
+3. 再输入“解释这个项目里 RAG 和 Agent 分别负责什么”
+4. 如果现场 SSE 或浏览器不稳定，切换到 CLI 演示同样任务
+
+完整话术和任务顺序见 [docs/demo-script.md](/Users/xmly/Swell/ai-code/swell-ai-agent-learn-map/projects/04-dev-copilot/docs/demo-script.md)。
+
 ## 复用模块
 
 | 来源             | 模块                     | 用途                        |
@@ -130,10 +148,12 @@ Response: { "status": "ok" }
 - **免费模型** `openai/gpt-oss-120b:free` 偶尔不调用工具直接回答，换成 `gpt-4o` 效果显著提升
 - `search_docs` 合并了两个向量库（02 + 03），不区分来源项目
 - `search_docs` 通过 `doc-rag` workspace 包复用能力，但向量索引仍来自 02 / 03 两个项目
+- 当前仍是**只读 Agent**，不提供自动修改文件或执行命令的能力
+- 还没有建立系统性的需求分析评估集，当前质量判断主要依赖测试和人工 review
 
 ## 迭代计划
 
 | 版本 | 功能                                     | 对应周 | 状态 |
 | ---- | ---------------------------------------- | ------ | ---- |
 | v1   | 5 个只读工具 + Agent 循环 + CLI + Web UI | Week 7 | ✅   |
-| v2   | 功能整合 + Prompt 调优 + 技术分享版本    | Week 8 | ⬜   |
+| v2   | 功能整合 + Prompt 调优 + 技术分享版本    | Week 8 | ✅   |
