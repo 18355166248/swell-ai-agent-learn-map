@@ -1,6 +1,6 @@
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, statSync } from "fs";
 import { searchRelevantChunks, type VectorEntry } from "doc-rag";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -12,14 +12,44 @@ const CANDIDATE_PATHS = [
 ];
 
 let _cachedVectors: VectorEntry[] | null = null;
+let _cachedMtimes: Record<string, number> = {};
 
 function loadVectors(): VectorEntry[] {
-  if (_cachedVectors) return _cachedVectors;
+  // 检查任一候选文件的 mtime 是否变化（新增、修改、删除）
+  let needsReload = _cachedVectors === null;
 
-  // 合并所有可用的向量索引
+  if (!needsReload) {
+    for (const p of CANDIDATE_PATHS) {
+      const prevMtime = _cachedMtimes[p] ?? 0;
+      let currMtime = 0;
+      try {
+        currMtime = statSync(p).mtimeMs;
+      } catch {
+        /* 文件不存在，mtime 视为 0 */
+      }
+      if (currMtime !== prevMtime) {
+        needsReload = true;
+        break;
+      }
+    }
+  }
+
+  if (!needsReload) return _cachedVectors!;
+
+  // 重新加载：合并所有可用的向量索引
   const all: VectorEntry[] = [];
+  const newMtimes: Record<string, number> = {};
+
   for (const p of CANDIDATE_PATHS) {
-    if (existsSync(p)) {
+    let mtime = 0;
+    try {
+      mtime = statSync(p).mtimeMs;
+    } catch {
+      /* 文件不存在 */
+    }
+    newMtimes[p] = mtime;
+
+    if (mtime > 0) {
       try {
         const loaded: VectorEntry[] = JSON.parse(readFileSync(p, "utf-8"));
         all.push(...loaded);
@@ -30,6 +60,7 @@ function loadVectors(): VectorEntry[] {
   }
 
   _cachedVectors = all;
+  _cachedMtimes = newMtimes;
   return _cachedVectors;
 }
 
@@ -56,4 +87,10 @@ export async function searchDocs(args: { query: string }, _projectRoot: string):
   });
 
   return `找到 ${results.length} 个相关文档片段:\n\n${formatted.join("\n\n")}`;
+}
+
+// 仅供测试使用：重置向量缓存状态
+export function _resetCache(): void {
+  _cachedVectors = null;
+  _cachedMtimes = {};
 }

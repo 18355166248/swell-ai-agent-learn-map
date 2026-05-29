@@ -4,10 +4,13 @@
   "description": "文档 RAG 问答系统 - 向量化检索 + LLM 回答",
   "type": "module",
   "exports": {
-    ".": "./dist/public.js"
+    ".": {
+      "types": "./dist/public.d.ts",
+      "default": "./dist/public.js"
+    }
   },
-  "types": "./dist/public.d.ts",
   "scripts": {
+    "prepare": "npm run build",
     "build": "tsc",
     "index": "tsx src/index.ts",
     "ask": "tsx src/ask.ts",

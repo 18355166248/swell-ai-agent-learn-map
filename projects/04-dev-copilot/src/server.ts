@@ -25,7 +25,6 @@ app.post("/api/agent", async (req, res) => {
       return;
     }
 
-    console.log(`Agent 任务: ${task.slice(0, 80)}...`);
     const result = await runAgent(task.trim(), { silent: true });
     res.json(result);
   } catch (err: any) {
@@ -87,7 +86,7 @@ app.get("/api/agent/stream", async (req, res) => {
       }
     };
 
-    const result = await runAgent(task, { silent: true, onEvent });
+    const result = await runAgent(task, { silent: false, onEvent });
     sendSSE("done", { answer: result.answer, iterations: result.iterations });
   } catch (err: any) {
     sendSSE("error", { message: err.message });

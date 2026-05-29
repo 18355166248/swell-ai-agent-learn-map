@@ -119,10 +119,21 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
   let finalAnswer = "";
   let completedIterations = 0;
 
-  if (!silent) console.log(`Agent 启动: ${task.slice(0, 60)}...`);
+  const log = (...args: any[]) => {
+    if (!silent) console.log(`[ReAct]`, ...args);
+  };
+
+  log(`========== Agent 启动 ==========`);
+  log(`任务: ${task.slice(0, 120)}${task.length > 120 ? "..." : ""}`);
+  log(`模型: ${model} | 最大迭代: ${maxIterations} | 工具数: ${tools.length}`);
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
     completedIterations = iteration;
+
+    log(`---------- 迭代 ${iteration}/${maxIterations} ----------`);
+    log(`发送请求 → 消息数: ${messages.length} | 工具数: ${tools.length}`);
+
+    const t0 = Date.now();
     const response = await retryWithBackoff(() =>
       client.chat.completions.create({
         model,
@@ -132,15 +143,37 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
         max_tokens: 2048,
       }),
     );
+    const latency = Date.now() - t0;
 
     const msg = response.choices[0]?.message;
     if (!msg) {
       finalAnswer = "Agent 未返回有效响应";
+      log(`✗ 空响应`);
       break;
+    }
+
+    const finishReason = response.choices[0]?.finish_reason;
+    const usage = response.usage;
+    log(
+      `LLM 响应 ← finish: ${finishReason} | ` +
+        `tokens: ${usage?.prompt_tokens ?? "?"}→${usage?.completion_tokens ?? "?"} ` +
+        `(总计 ${usage?.total_tokens ?? "?"}) | 耗时: ${latency}ms`,
+    );
+
+    if (msg.content) {
+      const preview = msg.content.slice(0, 150).replace(/\n/g, "\\n");
+      log(`content 预览: ${preview}${msg.content.length > 150 ? "..." : ""}`);
+    }
+
+    if (msg.tool_calls?.length) {
+      log(
+        `tool_calls: [${msg.tool_calls.map((tc) => `${tc.function.name}(${tc.function.arguments.slice(0, 80)})`).join(", ")}]`,
+      );
     }
 
     // 情况 1：最终答案（有内容，没有 tool_calls）
     if (msg.content && !msg.tool_calls) {
+      log(`>>> 最终答案 (${msg.content.length} 字符)`);
       steps.push({ iteration, thought: msg.content });
       onEvent?.({ type: "answer", content: msg.content, iteration });
       finalAnswer = msg.content;
@@ -169,6 +202,8 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
           toolArgs = {};
         }
 
+        log(`🔧 调用工具: ${toolName} ${JSON.stringify(toolArgs).slice(0, 120)}`);
+
         onEvent?.({
           type: "tool_call",
           content: `调用 ${toolName}`,
@@ -177,8 +212,19 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
           toolArgs,
         });
 
+        const toolT0 = Date.now();
         const rawResult = await executeTool(toolName, toolArgs, projectRoot);
+        const toolLatency = Date.now() - toolT0;
         const resultStr = formatToolResult(rawResult);
+
+        log(
+          `   工具返回: ${rawResult.length} 字符 (截断后 ${resultStr.length}) | 耗时: ${toolLatency}ms`,
+        );
+        if (resultStr.length >= 50) {
+          log(`   结果预览: ${resultStr.slice(0, 150).replace(/\n/g, "\\n")}...`);
+        } else {
+          log(`   结果: ${resultStr.replace(/\n/g, "\\n")}`);
+        }
 
         onEvent?.({ type: "tool_result", content: resultStr, iteration, toolName });
 
@@ -195,17 +241,20 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
           content: resultStr,
         } as any);
       }
+
+      log(`迭代 ${iteration} 完成 → 消息总数: ${messages.length}`);
       continue;
     }
 
     // 情况 3：无内容无 tool_calls（异常情况）
+    log(`✗ 无 content 也无 tool_calls，终止循环`);
     finalAnswer = "Agent 未返回内容或工具调用";
     break;
   }
 
   // 达到最大迭代次数，强制总结
   if (!finalAnswer) {
-    if (!silent) console.log("达到最大迭代次数，请求 LLM 总结...");
+    log(`>>> 达到最大迭代次数 (${maxIterations})，请求 LLM 强制总结...`);
 
     messages.push({
       role: "user",
@@ -213,6 +262,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
     } as any);
 
     try {
+      const t0 = Date.now();
       const response = await client.chat.completions.create({
         model,
         messages,
@@ -220,12 +270,27 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
         max_tokens: 2048,
       });
       finalAnswer = response.choices[0]?.message?.content || "无法生成总结";
+      log(`强制总结完成 | 耗时: ${Date.now() - t0}ms | ${finalAnswer.length} 字符`);
     } catch {
       finalAnswer = "达到最大迭代次数，且总结请求失败";
+      log(`✗ 强制总结失败`);
     }
 
     onEvent?.({ type: "answer", content: finalAnswer, iteration: maxIterations + 1 });
     steps.push({ iteration: maxIterations + 1, thought: "达到上限，强制总结" });
+  }
+
+  log(`========== Agent 结束 ==========`);
+  log(
+    `总迭代: ${completedIterations} | 总步骤: ${steps.length} | 答案长度: ${finalAnswer.length} 字符`,
+  );
+  if (steps.filter((s) => s.action).length > 0) {
+    log(
+      `工具调用明细: ${steps
+        .filter((s) => s.action)
+        .map((s) => s.action!.name)
+        .join(" → ")}`,
+    );
   }
 
   return { answer: finalAnswer, steps, iterations: completedIterations };
