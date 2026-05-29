@@ -1,7 +1,7 @@
 # Week 8：整合收尾 + 技术分享
 
 **时间**：2026-07-09 – 2026-07-15
-**状态**：⬜ 未开始
+**状态**：🟡 进行中
 
 ## 本周目标
 
@@ -42,8 +42,8 @@ AI Dev Copilot for Frontend Workflow
 | 周一 | 功能整合，消灭已知 bug                        | ⬜     |
 | 周二 | 打磨输出质量（Prompt 调优）                   | ⬜     |
 | 周三 | 写项目 README 和使用文档                      | ⬜     |
-| 周四 | 写 8 周学习总结（`docs/learning-summary.md`） | ⬜     |
-| 周五 | 准备技术分享材料                              | ⬜     |
+| 周四 | 写 8 周学习总结（`docs/learning-summary.md`） | ✅     |
+| 周五 | 准备技术分享材料                              | ✅     |
 | 周末 | 最终演示，归档，复盘                          | ⬜     |
 
 ## 技术分享大纲建议
@@ -60,6 +60,19 @@ AI Dev Copilot for Frontend Workflow
 ## 产出 checklist
 
 - [ ] `projects/04-dev-copilot/` 功能完整可演示
-- [ ] `docs/learning-summary.md` 8 周总结
-- [ ] 技术分享 PPT 或文章
+- [x] `docs/learning-summary.md` 8 周总结（初稿）
+- [x] 技术分享 PPT 或文章（网页 PPT 初版）
 - [ ] `PROGRESS.md` 全部更新完毕
+
+## 当前产物
+
+- 8 周总结草稿：`../../docs/learning-summary.md`
+- 技术分享网页 PPT：`./ppt/index.html`
+- 本周笔记：`./notes.md`
+
+## 启动判断
+
+Week 8 已经启动，当前完成的是“总结与分享材料”的第一批交付。接下来还剩两块需要继续收口：
+
+- `projects/04-dev-copilot/` 的最终整合与演示链路确认
+- 项目 README / 使用文档 / PROGRESS 的最终完成态同步
