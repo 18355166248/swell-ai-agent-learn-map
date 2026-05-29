@@ -1,12 +1,23 @@
-# AI 学习地图
+# AI Native 学习成长地图
 
-> 目标：用 8 周时间，把 Prompt、LLM API、Embedding、RAG、Agent 这条 AI 应用工程路径真正走一遍，并沉淀每一阶段的学习结论与演进步骤。
+> 目标：把这个仓库做成一份持续演进的 AI Native / AI Agent 学习记录，不只保存代码产物，也记录每一阶段的认知变化、技术判断和成长路径。
 
 ## 当前状态
 
 - 当前日期：2026-05-29
 - 当前阶段：Week 8 完成
 - 当前重点：归档 8 周学习闭环，并为后续阶段预留扩展方向
+
+## 这个仓库到底在记录什么
+
+这不是一个单纯的“AI 工具合集”仓库，而是一个带阶段产物的成长记录仓库：
+
+- `weeks/` 记录每周推进过程
+- `projects/` 记录阶段性可运行产物
+- `experiments/` 记录效果验证和方法对比
+- `docs/stages/` 记录每一阶段真正学会了什么
+
+也就是说，这个仓库的核心不是“最后做出了哪个工具”，而是“我是怎么一步步学到 AI Native / AI Agent 的”。
 
 ## 学习路径
 
@@ -25,10 +36,12 @@ Prompt 基础
 
 ## 仓库说明
 
-这个仓库目前分成两类内容：
+这个仓库目前分成四层内容：
 
-- 已有内容：8 周路线图、Week 1–7 周文档、4 个阶段项目、基础测试与构建配置
-- 当前已完成：Week 8 复盘文档、演进总结、分享材料与最终状态收口
+- 学习推进层：`weeks/`
+- 阶段产物层：`projects/`
+- 方法实验层：`experiments/`
+- 认知沉淀层：`docs/`
 
 ### 当前仓库结构
 
@@ -38,9 +51,9 @@ swell-ai-agent-learn-map/
 ├── ROADMAP.md
 ├── PROGRESS.md
 ├── weeks/                  # 每周计划与笔记模板
-├── projects/               # 项目目录和项目 README
-├── experiments/            # 实验记录模板与数据集
-├── docs/                   # 概念索引、术语、技术决策、参考资料
+├── projects/               # 阶段项目：每一阶段的可运行产物
+├── experiments/            # 实验记录：效果对比、检索优化、Prompt 尝试
+├── docs/                   # 概念、阶段总结、技术决策、参考资料
 └── shared/                 # 共享模块目录骨架
 ```
 
@@ -49,20 +62,23 @@ swell-ai-agent-learn-map/
 下面这些内容属于后续可继续扩展的方向，不代表当前 8 周闭环必须全部完成：
 
 - `docs/concepts/*.md`：按主题沉淀核心概念笔记
+- `docs/stages/*.md`：按阶段沉淀“学会了什么 / 为什么会进入下一阶段”
 - `projects/*/src`：各阶段项目实现代码
 - `shared/llm`、`shared/embedding`、`shared/utils`：跨项目复用模块
 
 ## 快速导航
 
-| 我想看什么 | 去哪里                         |
-| ---------- | ------------------------------ |
-| 本周任务   | `weeks/week-XX/README.md`      |
-| 每周笔记   | `weeks/week-XX/notes.md`       |
-| 整体路线   | `ROADMAP.md`                   |
-| 当前进度   | `PROGRESS.md`                  |
-| 技术决策   | `docs/decisions/tech-stack.md` |
-| 概念现状   | `docs/concepts/README.md`      |
-| 实验记录   | `experiments/`                 |
+| 我想看什么   | 去哪里                         |
+| ------------ | ------------------------------ |
+| 本周任务     | `weeks/week-XX/README.md`      |
+| 每周笔记     | `weeks/week-XX/notes.md`       |
+| 整体路线     | `ROADMAP.md`                   |
+| 当前进度     | `PROGRESS.md`                  |
+| 阶段总结     | `docs/stages/README.md`        |
+| 技术决策     | `docs/decisions/tech-stack.md` |
+| 概念现状     | `docs/concepts/README.md`      |
+| 实验记录     | `experiments/`                 |
+| 下一阶段路线 | `ROADMAP.md`                   |
 
 ## 最终目标
 
@@ -72,6 +88,15 @@ swell-ai-agent-learn-map/
 - 检索规范、SDK、组件文档并附带引用来源
 - 输入需求后输出开发方案、风险点和测试点
 - 结合代码检索和文档检索完成多步分析
+
+## 下一阶段建议
+
+如果继续往下学，优先级建议是：
+
+1. `Evaluation`：建立 RAG / Agent 的评估集和回归机制
+2. `Memory`：学习会话记忆、任务状态和长期上下文
+3. `Human-in-the-loop`：把审批、确认、回滚加进 Agent 工作流
+4. `Workflow`：让 Agent 真正嵌进研发流程，而不只是回答问题
 
 ## 技术栈取舍
 

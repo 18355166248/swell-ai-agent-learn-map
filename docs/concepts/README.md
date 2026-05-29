@@ -4,21 +4,30 @@
 
 ## 当前已有
 
-| 文件 | 内容 |
-| ---- | ---- |
+| 文件          | 内容   |
+| ------------- | ------ |
 | `glossary.md` | 术语表 |
+
+## 建议一起看的内容
+
+如果你更关心“这些概念是在第几阶段真正学会的”，不要只看概念索引，也建议结合阶段总结一起看：
+
+| 目录                     | 作用                               |
+| ------------------------ | ---------------------------------- |
+| `../stages/README.md`    | 从成长路径角度看每一阶段学会了什么 |
+| `../learning-summary.md` | 从 8 周整体视角看演进过程          |
 
 ## 计划补充
 
 以下主题已经纳入学习计划，但正文文件尚未创建：
 
-| 计划文件名 | 主题 |
-| ---------- | ---- |
+| 计划文件名            | 主题                                               |
+| --------------------- | -------------------------------------------------- |
 | `01-prompt-basics.md` | Prompt 基础：System / User / Assistant、结构化输出 |
-| `02-llm-api.md` | LLM API：streaming、token、错误处理 |
-| `03-embedding.md` | Embedding、向量化、相似度计算 |
-| `04-rag-pipeline.md` | RAG 流程：切分、索引、检索、生成 |
-| `05-agent-tools.md` | Agent、Tool Calling、ReAct、多步任务 |
+| `02-llm-api.md`       | LLM API：streaming、token、错误处理                |
+| `03-embedding.md`     | Embedding、向量化、相似度计算                      |
+| `04-rag-pipeline.md`  | RAG 流程：切分、索引、检索、生成                   |
+| `05-agent-tools.md`   | Agent、Tool Calling、ReAct、多步任务               |
 
 ## 建议维护方式
 
