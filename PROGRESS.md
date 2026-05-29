@@ -10,7 +10,7 @@
 
 ## 当前快照
 
-- 更新时间：2026-05-28
+- 更新时间：2026-05-29
 - 当前阶段：Week 7 已完成
 - 本周已完成：Agent ReAct 循环 + 5 个只读工具 + CLI + Web UI (SSE 流式)
 - 下周待开始：Week 8 整合收尾 + 技术分享
@@ -166,6 +166,10 @@
 - [x] Express 服务 + SSE 流式端点
 - [x] 聊天式 Web UI（SSE 实时推理链展示）
 - [x] 多工具组合 Agent 测试（search_code → grep → 分析）
+
+### 本周笔记
+
+> 见 `weeks/week-07/notes.md`
 
 ---
 
