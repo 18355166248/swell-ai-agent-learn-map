@@ -3,7 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "description": "Evaluation lab for RAG and agent tasks in the AI Native learning map.",
+  "type": "module",
   "scripts": {
-    "todo": "echo \"Week 9 / Phase 2A: evaluation implementation not started yet\""
+    "eval:rag": "npx tsx src/cli.ts rag",
+    "eval:agent": "npx tsx src/cli.ts agent",
+    "eval:req": "npx tsx src/cli.ts req-analyst",
+    "eval:all": "npx tsx src/cli.ts all"
   }
 }

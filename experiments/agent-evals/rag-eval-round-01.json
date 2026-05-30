@@ -1,0 +1,179 @@
+{
+  "meta": {
+    "name": "rag-eval-round-01",
+    "description": "第一轮 RAG 评估任务集，基于 02-doc-rag 的 5 份真实文档设计，与 chunk-strategies 的 10 题互补，覆盖简单事实、规则提取、跨文档对比三类场景。",
+    "version": "0.1.0"
+  },
+  "tasks": [
+    {
+      "id": "rag-002",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "simple",
+      "category": "factual",
+      "question": "access_token 应该存储在哪里？为什么不能存 localStorage？",
+      "expectedSources": ["auth-flow.md"],
+      "expectedKeyPoints": [
+        "access_token 存储于内存中，不持久化到 localStorage",
+        "页面刷新后必须用 refresh_token 换取新的 access_token",
+        "refresh_token 存储于 httpOnly Cookie，有效期 7 天",
+        "防止 XSS 攻击窃取 token"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "考察安全设计原因，不仅是事实提取。"
+    },
+    {
+      "id": "rag-003",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "simple",
+      "category": "factual",
+      "question": "SearchBar 组件的实时联想功能是通过哪个接口获取数据的？联想去抖默认间隔是多少？",
+      "expectedSources": ["component-library.md"],
+      "expectedKeyPoints": [
+        "联想结果通过 /api/search/suggest 获取",
+        "debounceMs 参数控制去抖间隔，默认 300ms",
+        "支持历史记录，maxHistory 默认 8"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "考察精确参数值提取，一问多参数。"
+    },
+    {
+      "id": "rag-004",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "simple",
+      "category": "factual",
+      "question": "前端项目的 HTML 文件和 JS/CSS 文件在 CDN 上的缓存时间分别是多少？为什么这么设计？",
+      "expectedSources": ["deploy-cicd.md"],
+      "expectedKeyPoints": [
+        "静态资源（JS/CSS，文件名含 hash）缓存 1 年",
+        "HTML 文件缓存 5 分钟",
+        "hash 保证 JS/CSS 更新时文件名变化，无冲突",
+        "HTML 短缓存确保用户能获取最新版本"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "考察数值对比+设计原理，不能只答数字。"
+    },
+    {
+      "id": "rag-005",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "medium",
+      "category": "procedural",
+      "question": "如果图片上传到 OSS 失败了，系统会怎么处理？重试策略是什么？",
+      "expectedSources": ["upload-cdn.md"],
+      "expectedKeyPoints": [
+        "上传失败时自动重试最多 3 次",
+        "重试间隔递增：1 秒、3 秒、5 秒",
+        "压缩超时 5 秒则跳过压缩，直接上传原图",
+        "凭证过期自动刷新后重试"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "考察异常流程和重试策略的完整提取。"
+    },
+    {
+      "id": "rag-006",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "medium",
+      "category": "rule",
+      "question": "项目中 TypeScript 类型定义有什么硬性要求？any 类型能用吗？",
+      "expectedSources": ["project-react-rules.md"],
+      "expectedKeyPoints": [
+        "所有 Props、函数参数、返回值都要定义类型",
+        "类型定义放在对应的 .types.ts 文件中",
+        "使用 interface 定义对象类型，type 定义联合类型或别名",
+        "禁止使用 any 类型，不确定时使用 unknown 并配合类型守卫"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "考察规则提取+替代方案，不能只说'不能用 any'。"
+    },
+    {
+      "id": "rag-007",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "medium",
+      "category": "procedural",
+      "question": "如果生产环境部署后 JS 错误率飙升到 1%，系统会自动做什么？回滚是怎么实现的？",
+      "expectedSources": ["deploy-cicd.md"],
+      "expectedKeyPoints": [
+        "JS 错误率阈值是 0.5%，超过则自动回滚",
+        "回滚通过修改 CDN 回源指向实现",
+        "OSS 保留最近 5 个版本",
+        "回滚命令：npm run deploy:rollback",
+        "告警通知方式：企业微信 + 邮件"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "考察阈值触发+操作流程，需答出 0.5% 阈值和回滚机制。"
+    },
+    {
+      "id": "rag-008",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "hard",
+      "category": "cross-doc",
+      "question": "项目开发规范里说的组件目录结构，和 @swell/mobile-ui 组件库的实际目录约定有什么一致和不同的地方？",
+      "expectedSources": ["project-react-rules.md", "component-library.md"],
+      "expectedKeyPoints": [
+        "一致点：都使用 components/ 目录，通用组件放 common/ 子目录",
+        "差异点：项目规范要求三个文件（index.tsx / ComponentName.tsx / .types.ts），组件库直接 import 使用",
+        "项目规范要求组件文件不超过 300 行",
+        "组件命名都使用 PascalCase"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "跨文档对比分析，需要从两份文档中分别提取再综合。"
+    },
+    {
+      "id": "rag-009",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "difficulty": "hard",
+      "category": "rule",
+      "question": "列出项目中关于代码编写的所有禁止事项，并说明每条禁令的原因。",
+      "expectedSources": ["project-react-rules.md"],
+      "expectedKeyPoints": [
+        "禁止嵌套三元表达式（超过一层）— 降低可读性",
+        "禁止使用 any 类型 — 破坏类型安全",
+        "禁止在组件中直接写复杂业务逻辑 — 应封装为 Hook",
+        "禁止使用内联样式（除非动态计算）— 统一使用 TailwindCSS",
+        "禁止提交包含 console.log 的代码",
+        "禁止在未完成功能时提交代码"
+      ],
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "notes": "长文本中多条目完整列举，考察召回覆盖面。"
+    }
+  ]
+}

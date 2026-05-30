@@ -1,7 +1,7 @@
 # 项目 05：Agent Evaluation Lab
 
 > 对应学习阶段：Phase 2A / Week 9+
-> 当前状态：骨架已建立，待进入第一轮评估实现
+> 当前状态：eval runner 已实现，评估任务集已就绪，待启动服务执行第一轮手工评估
 
 ## 这是什么
 
@@ -46,23 +46,36 @@
 | `projects/03-req-analyst` | 结构化字段完整性、风险点覆盖度     |
 | `projects/04-dev-copilot` | 任务完成度、工具调用顺序、边界行为 |
 
-## 第一版建议目录
+## 使用方式
+
+```bash
+# 确保三个目标服务已启动（02-doc-rag:8081 / 03-req-analyst:8082 / 04-dev-copilot:8083）
+
+# 单独运行某类评估
+npm run eval:rag          # 仅 RAG 评估
+npm run eval:agent        # 仅 Agent 评估
+npm run eval:req          # 仅 Req-Analyst 评估
+
+# 运行全量评估
+npm run eval:all
+```
+
+结果输出到 `reports/round-1-{type}.json`。
+
+## 目录结构
 
 ```text
 05-agent-eval/
 ├── README.md
 ├── package.json
-├── tasks/                 # 评估任务集（后续可拆 RAG / Agent）
-├── reports/               # 评估报告输出
-└── src/                   # 执行评估与汇总逻辑
-```
-
-## 第一版建议能力
-
-1. 支持读取任务集 JSON
-2. 支持运行单条或整组任务
-3. 输出统一结果结构
-4. 支持手工判分字段和备注字段
+├── tasks/                 # 任务集副本 / 自定义任务
+├── reports/               # 评估报告输出（JSON + Markdown）
+│   └── report-template.md # 报告模板
+└── src/
+    ├── schema.ts          # 评估结果类型定义
+    ├── config.ts          # 服务地址与路径配置
+    ├── runner.ts          # 评估执行逻辑
+    └── cli.ts             # CLI 入口
 
 ## 当前不急着做的事
 
@@ -71,3 +84,4 @@
 - 大规模 benchmark 平台
 
 先把一套最小可复盘评估流程跑通，比一次把平台做大更重要。
+```

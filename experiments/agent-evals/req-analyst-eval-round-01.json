@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "name": "req-analyst-eval-round-01",
+    "description": "第一轮需求分析评估任务集，基于 03-req-analyst 的六个分析维度设计，覆盖字段完整性、规范引用准确性、场景适配性三个维度，共 3 组任务（含 5 个输入场景）。",
+    "version": "0.1.0"
+  },
+  "tasks": [
+    {
+      "id": "req-002",
+      "type": "req-analyst",
+      "targetProject": "03-req-analyst",
+      "difficulty": "medium",
+      "category": "field-completeness",
+      "question": "新增专辑详情页的优惠券选择功能：用户在购买专辑时可以看到可用优惠券列表，选择一张优惠券后自动计算优惠后价格，点击购买进入支付流程。需要在支付面板上方展示优惠券选择区域。",
+      "expectedKeyPoints": [
+        "pageChanges 至少 1 条，page 为具体页面名（如 AlbumDetailPage、PaymentPanel），changes 描述具体改动",
+        "apiDependencies 至少含 /api/payment/coupons 或 /api/payment/order，isNew 有明确 true/false",
+        "trackingRequirements 至少 1 条，eventType 命中已知四种类型之一，moduleId 非空",
+        "componentDependencies 至少含 CouponSelector 或 PaymentPanel，名称与 component-spec.md 可对应",
+        "risks 至少 1 条，level 为 high/medium/low，mitigation 为具体可执行措施",
+        "testSuggestions 至少 1 条，scenario 含具体操作步骤，priority 明确",
+        "六个维度都有实质内容，不存在应填却返回空数组的维度"
+      ],
+      "checks": {
+        "field_completeness": true,
+        "spec_accuracy": true,
+        "scenario_adaptation": true
+      },
+      "notes": "预设 1：完整字段覆盖检查。如果某个维度返回空数组（如 apiDependencies 为空但优惠券场景需要支付接口），则判定字段完整性不满足。"
+    },
+    {
+      "id": "req-003",
+      "type": "req-analyst",
+      "targetProject": "03-req-analyst",
+      "difficulty": "medium",
+      "category": "spec-accuracy",
+      "question": "优化现有分享功能：将分享面板从底部弹出改为全屏弹窗，新增分享海报生成功能（用户可保存图片分享到朋友圈）。分享成功后要上报分享结果到服务端。",
+      "expectedKeyPoints": [
+        "componentDependencies 必须含 ShareSheet（来源：component-spec.md 业务组件表）",
+        "apiDependencies 必须含 /api/share/config 或 /api/share/report（来源：api-spec.md 分享模块）",
+        "trackingRequirements 必须含 share_click（来源：tracking-spec.md 业务事件表）",
+        "引用的组件名、接口路径、事件类型均真实存在于知识库中，无幻觉编造",
+        "不存在知识库中不存在的组件名、接口路径或事件类型"
+      ],
+      "expectedSources": ["component-spec.md", "api-spec.md", "tracking-spec.md"],
+      "checks": {
+        "field_completeness": true,
+        "spec_accuracy": true,
+        "scenario_adaptation": true
+      },
+      "notes": "预设 2：规范引用准确性检查。将输出与知识库原文对照，验证每个引用的组件/接口/埋点事件是否真实存在。"
+    },
+    {
+      "id": "req-004",
+      "type": "req-analyst",
+      "targetProject": "03-req-analyst",
+      "difficulty": "hard",
+      "category": "scenario-adaptation",
+      "question": "改造优惠券选择功能，允许用户同时选择多张优惠券组合使用，自动计算最大优惠金额。",
+      "expectedKeyPoints": [
+        "risks 维度必须识别与 payment-flow.md 中'每笔订单只能使用 1 张优惠券'规则的冲突",
+        "apiDependencies 中批量使用优惠券的接口应标注为 isNew: true",
+        "不应简单复用预设 1 的单优惠券分析模板",
+        "场景差异化：输出内容明显区别于单优惠券场景"
+      ],
+      "expectedSources": ["payment-flow.md", "api-spec.md"],
+      "checks": {
+        "field_completeness": true,
+        "spec_accuracy": true,
+        "scenario_adaptation": true
+      },
+      "notes": "场景适配（C2 变体）：考察规则冲突检测。核心判断点是 risks 维度是否识别出与现有规范的矛盾。"
+    },
+    {
+      "id": "req-005",
+      "type": "req-analyst",
+      "targetProject": "03-req-analyst",
+      "difficulty": "hard",
+      "category": "scenario-adaptation",
+      "question": "新增直播间礼物打赏功能，用户可以在直播间选择不同价位的礼物打赏给主播，打赏成功后播放特效动画。",
+      "expectedKeyPoints": [
+        "知识库中没有直播打赏相关规范，系统应基于已有知识合理推理",
+        "不应编造不存在的接口/组件名，新接口/新组件应标注 isNew: true",
+        "不应返回全空结果——至少应能推导出通用支付流程和埋点上报的通用要求",
+        "risks 维度应说明'直播打赏超出当前知识库覆盖范围'的风险"
+      ],
+      "checks": {
+        "field_completeness": true,
+        "spec_accuracy": true,
+        "scenario_adaptation": true
+      },
+      "notes": "场景适配（C1 变体）：考察泛化边界。输入场景超出知识库覆盖范围时，系统能否合理推理而不编造。"
+    },
+    {
+      "id": "req-006",
+      "type": "req-analyst",
+      "targetProject": "03-req-analyst",
+      "difficulty": "hard",
+      "category": "scenario-adaptation",
+      "question": "购买专辑成功后，弹出分享引导面板，用户可生成专辑海报分享到朋友圈。分享内容需携带来源追踪参数。",
+      "expectedKeyPoints": [
+        "应同时引用支付流程规范（payment_start/success）和分享规范（share_click, /api/share/report）",
+        "componentDependencies 应同时包含 PaymentPanel 和 ShareSheet",
+        "testSuggestions 应覆盖支付和分享的联动场景（如'支付成功 → 弹出分享引导 → 生成海报'）",
+        "跨域覆盖：支付和分享两个领域的关键规范条目都被引用"
+      ],
+      "expectedSources": [
+        "payment-flow.md",
+        "api-spec.md",
+        "component-spec.md",
+        "tracking-spec.md"
+      ],
+      "checks": {
+        "field_completeness": true,
+        "spec_accuracy": true,
+        "scenario_adaptation": true
+      },
+      "notes": "场景适配（C3 变体）：考察跨域协同。支付+分享联动场景，验证系统是否同时覆盖两个领域的规范。"
+    }
+  ]
+}

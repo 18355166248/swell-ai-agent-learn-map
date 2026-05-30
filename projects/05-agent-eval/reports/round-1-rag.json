@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "name": "round-1-rag",
+    "date": "2026-05-29",
+    "round": 1,
+    "config": {
+      "model": "openai/gpt-oss-120b:free",
+      "temperature": 0.3,
+      "maxTokens": 2048
+    }
+  },
+  "results": [
+    {
+      "taskId": "rag-002",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "access_token 应该存储在哪里？为什么不能存 localStorage？",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "**access_token 应该存储在内存中（如 JavaScript 变量或状态管理库），而不应持久化到 localStorage。**\n\n**原因：**\n\n1. **防止 XSS 窃取**  \n   - localStorage 可被任意执行的脚本读取，一旦页面出现跨站脚本（XSS）漏洞，攻击者即可直接读取并盗用 token，进而冒充用户发起请求。  \n   - 将 token 只保存在内存中，页面刷新后即失效，攻击者即使获取了页面脚本也难以长期持有 token。\n\n2. **符合文档安全规范**  \n   - 文档明确规定 “access_token 不持久化，页面刷新后必须用 refresh_token 换取”。这保证了即使 token 被泄露，也只能在短时间（15 分钟）内使用，刷新后即失效。\n\n3. **配合 refresh_token 的安全设计**  \n   - refresh_token 采用 httpOnly Cookie 存储，只有服务器能访问，前端无法直接读取。access_token 失效后，前端只能通过安全的 `/api/auth/refresh` 接口再",
+        "sources": ["auth-flow.md", "auth-flow.md", "upload-cdn.md"]
+      },
+      "notes": "考察安全设计原因，不仅是事实提取。"
+    },
+    {
+      "taskId": "rag-003",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "SearchBar 组件的实时联想功能是通过哪个接口获取数据的？联想去抖默认间隔是多少？",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "SearchBar 的实时联想数据是通过接口 **`/api/search/suggest`** 获取的。  \n联想去抖的默认间隔为 **300 ms**。",
+        "sources": ["component-library.md", "component-library.md", "component-library.md"]
+      },
+      "notes": "考察精确参数值提取，一问多参数。"
+    },
+    {
+      "taskId": "rag-004",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "前端项目的 HTML 文件和 JS/CSS 文件在 CDN 上的缓存时间分别是多少？为什么这么设计？",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "HTML 文件在 CDN 上的缓存时间为 **5 分钟**，而 JS、CSS 等静态资源的缓存时间为 **1 年**（因为文件名中已带有 hash，文件内容变更时会生成新文件名，避免冲突）。\n\n**设计原因**：\n\n- **HTML**：页面模板会随业务需求频繁更新，需要让用户尽快获取到最新的入口文件和资源引用，所以只缓存短时间（5 分钟），既能利用 CDN 加速，又能保证及时更新。\n- **JS/CSS**：这些文件在构建后文件名带有唯一的 hash，只有代码真正变更时才会生成新文件名。将其缓存设为 1 年可以让浏览器和 CDN 长期命中缓存，最大化静态资源的访问性能，避免不必要的网络请求。",
+        "sources": ["deploy-cicd.md", "deploy-cicd.md", "upload-cdn.md"]
+      },
+      "notes": "考察数值对比+设计原理，不能只答数字。"
+    },
+    {
+      "taskId": "rag-005",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "如果图片上传到 OSS 失败了，系统会怎么处理？重试策略是什么？",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "如果图片上传到 OSS 失败，系统会自动进行重试，最多重试 3 次，重试间隔依次递增为 **1 秒、3 秒、5 秒**。如果是因为上传凭证过期导致的失败，系统会先自动刷新凭证，然后再重新尝试上传。",
+        "sources": ["upload-cdn.md", "upload-cdn.md", "upload-cdn.md"]
+      },
+      "notes": "考察异常流程和重试策略的完整提取。"
+    },
+    {
+      "taskId": "rag-006",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "项目中 TypeScript 类型定义有什么硬性要求？any 类型能用吗？",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "项目中对 TypeScript 类型定义的硬性要求包括：\n\n1. **必须为所有 Props、函数参数和返回值定义类型**，并统一放在对应的 `.types.ts` 文件中。  \n2. **对象类型使用 `interface` 定义**，**联合类型或别名使用 `type` 定义**（如 `export type ImageFormat = \"jpg\" | \"png\" | \"webp\" | \"gif\"`）。  \n3. **禁止使用 `any` 类型**。如果不确定具体类型，应使用 `unknown` 并通过类型守卫进行细化。\n\n因此，`any` 不能在项目中使用。",
+        "sources": ["project-react-rules.md", "project-react-rules.md", "project-react-rules.md"]
+      },
+      "notes": "考察规则提取+替代方案，不能只说'不能用 any'。"
+    },
+    {
+      "taskId": "rag-007",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "如果生产环境部署后 JS 错误率飙升到 1%，系统会自动做什么？回滚是怎么实现的？",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "当生产环境部署后监控到 **JS 错误率 > 0.5%** 时，系统会自动触发回滚。具体流程如下：\n\n1. **监控告警**：监控平台检测到 JS 错误率达到 1%（超过阈值 0.5%），立即通过企业微信和邮件发送告警。  \n2. **自动回滚**：监控规则配置了 “错误率超过 0.5% 自动回滚”，系统会执行回滚操作。  \n3. **回滚实现方式**：  \n   - OSS 中保留最近 5 个版本的构建产物。  \n   - 回滚只需要把 CDN 的回源指向改为上一版本的文件。  \n   - 通过执行脚本 `npm run deploy:rollback` 即可完成指向切换，用户访问的静态资源会恢复到上一版本。  \n\n因此，生产环境出现 1% 的 JS 错误率时，系统会自动把 CDN 回源指向切换回上一个稳定版本，实现快速回滚。",
+        "sources": ["deploy-cicd.md", "deploy-cicd.md", "project-react-rules.md"]
+      },
+      "notes": "考察阈值触发+操作流程，需答出 0.5% 阈值和回滚机制。"
+    },
+    {
+      "taskId": "rag-008",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "项目开发规范里说的组件目录结构，和 @swell/mobile-ui 组件库的实际目录约定有什么一致和不同的地方？",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "**相同点**  \n\n1. **目录层级**  \n   - 两者都把组件放在 `src/components/`（或等价的根目录）下。  \n   - 都采用 **“通用组件 + 业务组件”** 的划分方式：  \n     - `common/`（文档） ↔ `@swell/mobile-ui` 中的基础 UI 组件（Button、Modal、Input 等）。  \n     - 业务/业务特定组件（如 `ImageViewer`） ↔ `@swell/mobile-ui` 中的业务组件（SearchBar、AlbumCard 等）。\n\n2. **每个组件独立文件夹**  \n   - 文档中每个组件都有自己的文件夹（`Button/`, `ImageViewer/`），内部包含实现文件、类型文件、样式文件等。  \n   - `@swell/mobile-ui` 也遵循同样的约定：每个组件在库内部是一个独立的模块，支持按需加载和 Tree‑shaking。\n\n3. **文件命名**  \n   - 组件文件名与组件名保持一致，使用 PascalCase（如 `Button.tsx`、`Sea",
+        "sources": ["project-react-rules.md", "project-react-rules.md", "component-library.md"]
+      },
+      "notes": "跨文档对比分析，需要从两份文档中分别提取再综合。"
+    },
+    {
+      "taskId": "rag-009",
+      "type": "rag",
+      "targetProject": "02-doc-rag",
+      "question": "列出项目中关于代码编写的所有禁止事项，并说明每条禁令的原因。",
+      "checks": {
+        "retrieval_hit": true,
+        "citation_ok": true,
+        "task_completed": true
+      },
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "**项目中关于代码编写的所有禁止事项**  \n\n| 编号 | 禁止内容 | 说明/原因 |\n|------|----------|-----------|\n| 9.1‑1 | 禁止使用嵌套的三元表达式（超过一层） | 嵌套三元会导致代码可读性极差，难以维护和调试。 |\n| 9.1‑2 | 禁止使用 `any` 类型 | `any` 会失去 TypeScript 的类型检查优势，增加潜在运行时错误。 |\n| 9.1‑3 | 禁止在组件中直接写复杂业务逻辑（应封装为 Hook） | 业务逻辑放在 Hook 中可以复用、解耦 UI 与业务，保持组件简洁、易测试。 |\n| 9.1‑4 | 禁止使用内联样式（除非是动态计算的值） | 内联样式破坏 TailwindCSS/CSS 统一管理的优势，难以复用和主题化。 |\n| 9.1‑5 | 禁止删除代码中的注释（除非用户明确要求） | 注释是代码意图、约束和说明的关键，删除会降低可读性和团队协作效率。 |\n| 9.2‑1 | 禁止在未完成功能时提交代码 | 未完成的代码可能导致 CI 失败、影响他人工作，破坏迭代质量。 |\n| 9.2‑2 | 禁止",
+        "sources": ["project-react-rules.md", "project-react-rules.md", "project-react-rules.md"]
+      },
+      "notes": "长文本中多条目完整列举，考察召回覆盖面。"
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "passRate": 100,
+    "byDimension": {
+      "retrieval_hit": {
+        "total": 8,
+        "passed": 8,
+        "rate": 100
+      },
+      "citation_ok": {
+        "total": 8,
+        "passed": 8,
+        "rate": 100
+      },
+      "task_completed": {
+        "total": 8,
+        "passed": 8,
+        "rate": 100
+      }
+    },
+    "byFailureType": {
+      "retrieval_miss": 0,
+      "citation_wrong": 0,
+      "tool_choice_wrong": 0,
+      "task_incomplete": 0,
+      "constraint_break": 0
+    },
+    "byDifficulty": {
+      "simple": {
+        "total": 3,
+        "passed": 3,
+        "rate": 100
+      },
+      "medium": {
+        "total": 3,
+        "passed": 3,
+        "rate": 100
+      },
+      "hard": {
+        "total": 2,
+        "passed": 2,
+        "rate": 100
+      }
+    }
+  }
+}
