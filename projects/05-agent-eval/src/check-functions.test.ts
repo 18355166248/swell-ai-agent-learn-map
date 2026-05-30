@@ -210,6 +210,41 @@ describe("checkAgent", () => {
     );
     expect(result.keypoint_coverage).toBe(false);
   });
+
+  it("同义表达（非精确匹配）应通过模糊匹配命中关键点", () => {
+    const task = {
+      ...baseTask,
+      expectedTools: ["read_file"],
+      expectedKeyPoints: ["Agent 无法读取项目根目录之外的文件", "工具返回了安全策略限制错误"],
+    };
+    const result = checkAgent(
+      {
+        answer: "抱歉，我无法读取项目根目录之外的文件。工具返回了安全策略限制，禁止访问该路径。",
+        steps: [{ toolName: "read_file" }],
+        iterations: 1,
+      },
+      task,
+    );
+    // 答案使用了非精确措辞但关键语义一致
+    expect(result.keypoint_coverage).toBe(true);
+  });
+
+  it("变量名差异应通过词级重叠匹配关键点", () => {
+    const task = {
+      ...baseTask,
+      expectedKeyPoints: ["debounceMs 参数控制去抖间隔，默认 300ms"],
+    };
+    const result = checkAgent(
+      {
+        answer: "联想去抖的默认间隔是 300ms，通过 debounce 参数控制。",
+        steps: [{ toolName: "search_docs" }],
+        iterations: 1,
+      },
+      task,
+    );
+    // 答案说 "300ms" 和 "去抖" 和 "参数控制" 但没有 "debounceMs"
+    expect(result.keypoint_coverage).toBe(true);
+  });
 });
 
 // ---- Req-Analyst 检查测试 ----
@@ -394,5 +429,17 @@ describe("getFailureTypes", () => {
     expect(types).toContain("retrieval_miss");
     expect(types).toContain("citation_wrong");
     expect(types).toContain("task_incomplete");
+  });
+
+  it("Req-Analyst 维度失败应映射到对应的 failure type", () => {
+    expect(getFailureTypes({ field_completeness: false, task_completed: true })).toContain(
+      "field_incomplete",
+    );
+    expect(getFailureTypes({ spec_accuracy: false, task_completed: true })).toContain(
+      "spec_inaccurate",
+    );
+    expect(getFailureTypes({ scenario_adaptation: false, task_completed: true })).toContain(
+      "scenario_mismatch",
+    );
   });
 });

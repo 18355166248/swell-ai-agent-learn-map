@@ -16,6 +16,9 @@ const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 const DEFAULT_MODEL = "openai/gpt-oss-120b:free";
 const DATA_DIR = resolve(__dirname, "..", ".data");
 
+/** 单次 LLM 请求超时（毫秒） */
+const LLM_TIMEOUT = 60_000;
+
 export interface ReqAnalysis {
   pageChanges: { page: string; changes: string }[];
   apiDependencies: { endpoint: string; usage: string; isNew: boolean }[];
@@ -73,6 +76,97 @@ const SYSTEM_PROMPT = `你是一个资深前端需求分析专家。根据用户
 - 风险分析要具体，不要泛泛而谈
 - 测试建议要可执行，包含具体的验证点`;
 
+// ---- 重试与容错 ----
+
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 2,
+  label = "API",
+): Promise<T> {
+  let lastErr: any;
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastErr = err;
+      const isRetryable =
+        err.status >= 500 ||
+        err.status === 429 ||
+        err.code === "ECONNRESET" ||
+        err.code === "ETIMEDOUT" ||
+        err.code === "UND_ERR_CONNECT_TIMEOUT" ||
+        (err.message &&
+          (/timeout|rate.?limit|overloaded|server.?error/i.test(err.message) ||
+            /5\d\d/i.test(err.message)));
+
+      if (!isRetryable || i === maxRetries) {
+        throw lastErr;
+      }
+      const delay = Math.pow(2, i) * 1000;
+      console.error(
+        `[重试] ${label} 失败: ${err.message}，${delay}ms 后重试 (${i + 1}/${maxRetries})...`,
+      );
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastErr;
+}
+
+// ---- JSON 解析 ----
+
+function parseJsonRobust(raw: string): Record<string, unknown> {
+  // 1. 先尝试直接解析
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+
+  // 2. 去除 markdown 包裹后重试
+  const stripped = raw
+    .replace(/^```json?\s*/i, "")
+    .replace(/```\s*$/, "")
+    .trim();
+
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    // ignore
+  }
+
+  // 3. 尝试在文本中提取 JSON 对象（从第一个 { 到最后一个 }）
+  const firstBrace = raw.indexOf("{");
+  const lastBrace = raw.lastIndexOf("}");
+  if (firstBrace >= 0 && lastBrace > firstBrace) {
+    try {
+      return JSON.parse(raw.slice(firstBrace, lastBrace + 1));
+    } catch {
+      // ignore
+    }
+  }
+
+  // 4. 全部失败
+  console.error("JSON 解析失败，原始返回:", raw.slice(0, 500));
+  throw new Error("LLM 返回了无法解析的格式，请重试");
+}
+
+function normalizeAnalysis(parsed: Record<string, unknown>): ReqAnalysis {
+  return {
+    pageChanges: Array.isArray(parsed.pageChanges) ? parsed.pageChanges : [],
+    apiDependencies: Array.isArray(parsed.apiDependencies) ? parsed.apiDependencies : [],
+    trackingRequirements: Array.isArray(parsed.trackingRequirements)
+      ? parsed.trackingRequirements
+      : [],
+    componentDependencies: Array.isArray(parsed.componentDependencies)
+      ? parsed.componentDependencies
+      : [],
+    risks: Array.isArray(parsed.risks) ? parsed.risks : [],
+    testSuggestions: Array.isArray(parsed.testSuggestions) ? parsed.testSuggestions : [],
+  };
+}
+
+// ---- 核心逻辑 ----
+
 function loadVectors(): VectorEntry[] {
   const path = join(DATA_DIR, "vectors.json");
   if (!existsSync(path)) return [];
@@ -113,16 +207,30 @@ export async function analyzeRequirement(
     throw new Error("索引为空，请先运行 npm run index");
   }
 
-  // Query 改写 + 向量检索
+  // Query 改写（失败时回退到原始问题，rewriteQuery 内部已处理）
   const expanded = await rewriteQuery(requirement, model);
   const searchQuery = `${requirement} | ${expanded}`;
-  const queryEmb = await getEmbedding(searchQuery);
 
-  // 混合检索（向量 + BM25）
-  const vecResults = retrieve(queryEmb, vectors, 6);
-  const bm25 = new BM25Search(vectors);
-  const kwResults = bm25.search(searchQuery, 6);
-  const results = hybridRetrieve(vecResults, kwResults, 5);
+  // Embedding + 检索（失败时回退到 BM25）
+  let results: Array<{ entry: VectorEntry; similarity: number }>;
+  try {
+    const queryEmb = await retryWithBackoff(() => getEmbedding(searchQuery), 2, "Embedding");
+    const vecResults = retrieve(queryEmb, vectors, 6);
+    const bm25 = new BM25Search(vectors);
+    const kwResults = bm25.search(searchQuery, 6);
+    results = hybridRetrieve(vecResults, kwResults, 5);
+  } catch (err: any) {
+    console.error(`向量检索失败: ${err.message}，降级为 BM25 关键词检索`);
+    try {
+      const bm25 = new BM25Search(vectors);
+      results = bm25.search(searchQuery, 5).map((r) => ({
+        entry: r.entry,
+        similarity: r.bm25Score / 10, // 归一化到 0-1 范围
+      }));
+    } catch (bm25Err: any) {
+      throw new Error(`检索失败: ${err.message}`);
+    }
+  }
 
   const chunks = results.map((r) => r.entry.chunk);
   const userPrompt = buildUserPrompt(requirement, chunks);
@@ -130,46 +238,32 @@ export async function analyzeRequirement(
   const client = getClient();
   const modelName = model || DEFAULT_MODEL;
 
-  const response = await client.chat.completions.create({
-    model: modelName,
-    temperature: 0.2,
-    max_tokens: 2048,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userPrompt },
-    ],
-  });
+  // 带超时和重试的 LLM 调用
+  const makeLlmCall = () =>
+    client.chat.completions.create(
+      {
+        model: modelName,
+        temperature: 0.2,
+        max_tokens: 2048,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userPrompt },
+        ],
+      },
+      { signal: AbortSignal.timeout(LLM_TIMEOUT) },
+    );
 
-  const answer = response.choices[0]?.message?.content || "{}";
-
-  // 解析 JSON，处理可能的 markdown 包裹
-  const jsonStr = answer
-    .replace(/^```json?\s*/i, "")
-    .replace(/```\s*$/, "")
-    .trim();
-
+  let answer: string;
   try {
-    const parsed = JSON.parse(jsonStr);
-
-    // 确保所有字段存在
-    return {
-      pageChanges: parsed.pageChanges || [],
-      apiDependencies: parsed.apiDependencies || [],
-      trackingRequirements: parsed.trackingRequirements || [],
-      componentDependencies: parsed.componentDependencies || [],
-      risks: parsed.risks || [],
-      testSuggestions: parsed.testSuggestions || [],
-    };
-  } catch {
-    console.error("JSON 解析失败:", jsonStr.slice(0, 300));
-    return {
-      pageChanges: [],
-      apiDependencies: [],
-      trackingRequirements: [],
-      componentDependencies: [],
-      risks: [],
-      testSuggestions: [],
-    };
+    const response = await retryWithBackoff(makeLlmCall, 2, "LLM");
+    answer = response.choices[0]?.message?.content || "{}";
+  } catch (err: any) {
+    // LLM 彻底失败时，返回空分析而非 500，让评估系统记录失败原因
+    console.error(`LLM 调用最终失败: ${err.message}`);
+    throw new Error(`LLM 调用失败（已重试 2 次）: ${err.message}`);
   }
+
+  const parsed = parseJsonRobust(answer);
+  return normalizeAnalysis(parsed);
 }

@@ -14,6 +14,10 @@ config({ path: resolve(__dirname, "..", "..", ".env"), override: false });
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 const DEFAULT_MODEL = "openai/gpt-oss-120b:free";
 const MAX_TOOL_RESULT_CHARS = 8000;
+/** 单次 LLM 请求超时（毫秒） */
+const LLM_TIMEOUT = 90_000;
+/** 单次工具调用超时（毫秒） */
+const TOOL_TIMEOUT = 30_000;
 
 export interface AgentStep {
   iteration: number;
@@ -43,6 +47,8 @@ export interface AgentOptions {
   onEvent?: (event: AgentStreamEvent) => void;
   silent?: boolean;
   projectRoot?: string;
+  /** 全局超时（毫秒），默认 300s */
+  timeout?: number;
 }
 
 function getClient(): OpenAI {
@@ -99,11 +105,17 @@ function formatToolResult(raw: string): string {
 export async function runAgent(task: string, options: AgentOptions = {}): Promise<AgentResult> {
   const {
     model = DEFAULT_MODEL,
-    maxIterations = 10,
+    maxIterations = 6,
     onEvent,
     silent = false,
     projectRoot = detectProjectRoot(),
+    timeout = 300_000,
   } = options;
+
+  // 全局超时：通过 AbortController 在所有 LLM 调用间共享
+  const abortController = new AbortController();
+  const globalTimer = setTimeout(() => abortController.abort(), timeout);
+  if (globalTimer.unref) globalTimer.unref();
 
   const tools = getToolDefinitions();
   const client = getClient();
@@ -135,13 +147,19 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
 
     const t0 = Date.now();
     const response = await retryWithBackoff(() =>
-      client.chat.completions.create({
-        model,
-        messages,
-        tools,
-        temperature: 0.3,
-        max_tokens: 2048,
-      }),
+      client.chat.completions.create(
+        {
+          model,
+          messages,
+          tools,
+          temperature: 0.3,
+          max_tokens: 2048,
+        },
+        {
+          // 组合全局超时和单次调用超时
+          signal: abortController.signal,
+        },
+      ),
     );
     const latency = Date.now() - t0;
 
@@ -213,7 +231,13 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
         });
 
         const toolT0 = Date.now();
-        const rawResult = await executeTool(toolName, toolArgs, projectRoot);
+        let rawResult: string;
+        try {
+          rawResult = await executeTool(toolName, toolArgs, projectRoot);
+        } catch (toolErr: any) {
+          rawResult = `工具执行异常: ${toolErr.message}`;
+          log(`   ⚠ 工具异常: ${toolErr.message}`);
+        }
         const toolLatency = Date.now() - toolT0;
         const resultStr = formatToolResult(rawResult);
 
@@ -263,12 +287,15 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
 
     try {
       const t0 = Date.now();
-      const response = await client.chat.completions.create({
-        model,
-        messages,
-        temperature: 0.3,
-        max_tokens: 2048,
-      });
+      const response = await client.chat.completions.create(
+        {
+          model,
+          messages,
+          temperature: 0.3,
+          max_tokens: 2048,
+        },
+        { signal: abortController.signal },
+      );
       finalAnswer = response.choices[0]?.message?.content || "无法生成总结";
       log(`强制总结完成 | 耗时: ${Date.now() - t0}ms | ${finalAnswer.length} 字符`);
     } catch {
@@ -293,5 +320,6 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
     );
   }
 
+  clearTimeout(globalTimer);
   return { answer: finalAnswer, steps, iterations: completedIterations };
 }

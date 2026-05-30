@@ -1,7 +1,7 @@
 # 项目 05：Agent Evaluation Lab
 
 > 对应学习阶段：Phase 2A / Week 9+
-> 当前状态：eval runner 已实现，评估任务集已就绪，待启动服务执行第一轮手工评估
+> 当前状态：首轮评估已完成，评估引擎 v1 就绪，待启动服务重跑第二轮回归评估
 
 ## 这是什么
 
@@ -40,11 +40,39 @@
 
 ## 计划评估的对象
 
-| 对象                      | 关注点                             |
-| ------------------------- | ---------------------------------- |
-| `projects/02-doc-rag`     | 检索命中率、引用准确性、回答相关性 |
-| `projects/03-req-analyst` | 结构化字段完整性、风险点覆盖度     |
-| `projects/04-dev-copilot` | 任务完成度、工具调用顺序、边界行为 |
+| 对象                      | 关注点                                                                                    |
+| ------------------------- | ----------------------------------------------------------------------------------------- |
+| `projects/02-doc-rag`     | 检索命中率、引用准确性、关键点覆盖率、回答相关性                                          |
+| `projects/03-req-analyst` | 六维度字段完整性、规范引用准确性、场景适配性、关键点覆盖率                                |
+| `projects/04-dev-copilot` | 任务完成度、工具调用路径（expectedTools 验证）、边界行为（constraint 检测）、关键点覆盖率 |
+
+## 核心设计
+
+### 关键点覆盖率引擎
+
+每个评估任务定义 `expectedKeyPoints`，评估时自动将每条关键点拆分为子短语片段（按标点/空格切分），计算片段在回答中的命中率。单条关键点命中率 ≥ 50% 即判定通过；整体关键点覆盖率 ≥ 50% 即 `keypoint_coverage` 通过。
+
+```text
+"access_token 存储于内存中，不持久化到 localStorage"
+  → 片段: ["access_token 存储于内存中", "不持久化到 localStorage"]
+  → 回答包含 "access_token" 和 "localStorage" → 2/2 = 100% ✓
+```
+
+### 工具路径验证（Agent）
+
+`expectedTools` 中定义的工具必须**全部**出现在实际调用中，而非至少一个。
+
+### 边界约束检测（Agent）
+
+正则匹配"已修改/已完成"等声明 + API Key 泄露特征（`sk-` 前缀等），违规即 `constraint_break`。
+
+### 重试与容错
+
+`fetchWithRetry` 对网络错误和 5xx 自动重试（指数退避，最多 2 次），避免因偶发抖动误判失败。
+
+### 回归对比
+
+加载上一轮报告 JSON，自动对比 `newFailures` / `newPasses` / `passRateDelta`。
 
 ## 使用方式
 
@@ -58,9 +86,14 @@ npm run eval:req          # 仅 Req-Analyst 评估
 
 # 运行全量评估
 npm run eval:all
+
+# 指定模型
+npm run eval:all -- --model=openai/gpt-4o
+# 或环境变量
+MODEL_NAME=openai/gpt-4o npm run eval:all
 ```
 
-结果输出到 `reports/round-1-{type}.json`。
+结果输出到 `reports/round-{n}-{type}.json`。
 
 ## 目录结构
 
@@ -68,14 +101,21 @@ npm run eval:all
 05-agent-eval/
 ├── README.md
 ├── package.json
-├── tasks/                 # 任务集副本 / 自定义任务
-├── reports/               # 评估报告输出（JSON + Markdown）
-│   └── report-template.md # 报告模板
+├── tsconfig.json              # TypeScript 严格模式配置
+├── tasks/                     # 任务集副本 / 自定义任务
+├── reports/                   # 评估报告输出（JSON）
+│   ├── .gitkeep
+│   ├── report-template.md     # 报告模板
+│   ├── round-1-rag.json       # RAG 首轮评估报告
+│   ├── round-1-agent.json     # Agent 首轮评估报告
+│   └── round-1-req-analyst.json
 └── src/
-    ├── schema.ts          # 评估结果类型定义
-    ├── config.ts          # 服务地址与路径配置
-    ├── runner.ts          # 评估执行逻辑
-    └── cli.ts             # CLI 入口
+    ├── schema.ts              # 评估结果类型定义（EvalType / FailureType / CheckResult / EvalRoundReport）
+    ├── config.ts              # 服务地址、任务集路径、重试/超时配置
+    ├── runner.ts              # 评估执行逻辑：fetchWithRetry / computeKeypointCoverage / checkRag / checkAgent / checkReqAnalyst / getFailureTypes / runEval
+    ├── cli.ts                 # CLI 入口（支持 --model= 参数）
+    └── check-functions.test.ts # 26 个单元测试（RAG/Agent/Req-Analyst 检查 + 失败类型映射）
+```
 
 ## 当前不急着做的事
 
@@ -84,4 +124,3 @@ npm run eval:all
 - 大规模 benchmark 平台
 
 先把一套最小可复盘评估流程跑通，比一次把平台做大更重要。
-```

@@ -24,7 +24,7 @@
       "passed": true,
       "failureTypes": [],
       "actualOutput": {
-        "answer": "**access_token 应该存储在内存中（例如 JavaScript 变量或状态管理库），而不是持久化到 localStorage。**\n\n**原因：**\n\n- **防止 XSS 攻击**：localStorage 对所有脚本可读，一旦页面出现跨站脚本漏洞，攻击者就能直接读取并窃取 token。将 token 只保存在内存中，页面刷新后即失效，降低被窃取的风险。  \n- **符合安全规范**：文档明确规定 “access_token 不持久化，页面刷新后必须用 refresh_token 换取”，并且 **禁止在 URL 参数中传递 token**，进一步保证 token 不被泄露。  \n\n因此，遵循文档的安全注意事项，access_token 只在运行时保存在内存里，刷新页面后通过 httpOnly 的 refresh_token 再次获取新的 access_token。",
+        "answer": "**access_token 应该存储在内存中，而不是持久化到 localStorage。**  \n\n- **原因**：  \n  1. **防止 XSS 攻击**：localStorage 可被浏览器脚本直接读取，若页面出现跨站脚本漏洞，攻击者就能窃取 token。将 token 只保存在内存（如 JavaScript 变量或 Vue/React 状态），即使页面被注入脚本，也难以长期获取。  \n  2. **遵循文档安全规范**：文档明确规定 “access_token 不持久化，页面刷新后必须用 refresh_token 换取”，这保证了 token 的生命周期仅限于当前会话，降低泄露风险。  \n\n因此，access_token 只保存在内存中，页面刷新或关闭后即失效，需通过 httpOnly 的 refresh_token 再次获取新的 access_token。",
         "sources": ["auth-flow.md", "auth-flow.md", "upload-cdn.md"],
         "sourceMatchDetails": [
           {
@@ -36,13 +36,13 @@
           {
             "point": "access_token 存储于内存中，不持久化到 localStorage",
             "matched": true,
-            "hitFragments": ["access_token", "localStorage"],
+            "hitFragments": ["access_token", "存储于内存中", "不持久化到", "localStorage"],
             "totalFragments": 4
           },
           {
             "point": "页面刷新后必须用 refresh_token 换取新的 access_token",
             "matched": true,
-            "hitFragments": ["页面刷新后必须用", "refresh_token", "access_token"],
+            "hitFragments": ["页面刷新后必须用", "refresh_token", "换取新的", "access_token"],
             "totalFragments": 4
           },
           {
@@ -54,7 +54,7 @@
           {
             "point": "防止 XSS 攻击窃取 token",
             "matched": true,
-            "hitFragments": ["token"],
+            "hitFragments": ["攻击窃取", "token"],
             "totalFragments": 2
           }
         ]
@@ -87,7 +87,7 @@
           {
             "point": "联想结果通过 /api/search/suggest 获取",
             "matched": true,
-            "hitFragments": ["/api/search/suggest"],
+            "hitFragments": ["联想结果通过", "/api/search/suggest"],
             "totalFragments": 2
           },
           {
@@ -120,7 +120,7 @@
       "passed": true,
       "failureTypes": [],
       "actualOutput": {
-        "answer": "- **HTML 文件缓存时间**：5 分钟  \n- **JS / CSS（以及其它带 hash 的静态资源）缓存时间**：1 年  \n\n**设计原因**  \n- HTML 文件经常会更新（比如页面结构、入口脚本的版本），如果缓存时间太长，用户可能拿不到最新的页面。设置较短的 5 分钟缓存，可确保在发布新版本后用户能够快速获取到最新的 HTML。  \n- JS、CSS 等构建产物文件名中已包含 hash，文件内容变更时 hash 也会变，旧文件不会再被引用。因此可以将这些文件设为长期缓存（1 年），最大化 CDN 命中率，提升加载性能。",
+        "answer": "**缓存时间**  \n- **HTML 文件**：缓存 5 分钟。  \n- **JS / CSS 等静态资源**（文件名带 hash）：缓存 1 年。\n\n**设计原因**  \n- HTML 是入口文件，包含对最新资源（带 hash 的 JS/CSS）的引用。为了让用户能够及时获取到新版本的页面，需要较短的缓存时间（5 分钟），保证在发布新版本后能够快速切换。  \n- JS、CSS 等构建产物文件名中已包含 hash，文件内容变更时 hash 会变化，从而产生新文件名。这样即使缓存时间设为很长（1 年），也不会出现旧文件被使用的问题，能够最大化利用 CDN 的长期缓存，提高加载性能。",
         "sources": ["deploy-cicd.md", "deploy-cicd.md", "project-react-rules.md"],
         "sourceMatchDetails": [
           {
@@ -131,8 +131,8 @@
         "keypointDetails": [
           {
             "point": "静态资源（JS/CSS，文件名含 hash）缓存 1 年",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["静态资源（JS/CSS", "文件名含", "hash）缓存"],
             "totalFragments": 3
           },
           {
@@ -143,14 +143,14 @@
           },
           {
             "point": "hash 保证 JS/CSS 更新时文件名变化，无冲突",
-            "matched": false,
-            "hitFragments": ["hash"],
+            "matched": true,
+            "hitFragments": ["hash", "JS/CSS", "更新时文件名变化"],
             "totalFragments": 3
           },
           {
             "point": "HTML 短缓存确保用户能获取最新版本",
             "matched": true,
-            "hitFragments": ["HTML"],
+            "hitFragments": ["HTML", "短缓存确保用户能获取最新版本"],
             "totalFragments": 2
           }
         ]
@@ -165,13 +165,13 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "keypoint_coverage": false,
+        "keypoint_coverage": true,
         "task_completed": true
       },
-      "passed": false,
-      "failureTypes": ["keypoint_miss"],
+      "passed": true,
+      "failureTypes": [],
       "actualOutput": {
-        "answer": "如果图片上传到 OSS 失败，系统会自动进行重试，最多重试 3 次，重试间隔依次为 1 秒、 3 秒、 5 秒。若是因为凭证过期导致的失败，系统会先刷新凭证再重新尝试上传。",
+        "answer": "如果图片上传到 OSS 失败，系统会自动进行重试，最多重试 **3 次**，每次重试的间隔递增，具体为 **1 秒 → 3 秒 → 5 秒**。  \n此外，如果是因为上传凭证已过期导致的失败，系统会先自动刷新凭证，然后再重新尝试上传。",
         "sources": ["upload-cdn.md", "upload-cdn.md", "upload-cdn.md"],
         "sourceMatchDetails": [
           {
@@ -182,14 +182,14 @@
         "keypointDetails": [
           {
             "point": "上传失败时自动重试最多 3 次",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["上传失败时自动重试最多"],
             "totalFragments": 1
           },
           {
             "point": "重试间隔递增：1 秒、3 秒、5 秒",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["重试间隔递增：1"],
             "totalFragments": 1
           },
           {
@@ -200,8 +200,8 @@
           },
           {
             "point": "凭证过期自动刷新后重试",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["凭证过期自动刷新后重试"],
             "totalFragments": 1
           }
         ]
@@ -222,7 +222,7 @@
       "passed": true,
       "failureTypes": [],
       "actualOutput": {
-        "answer": "项目中对 TypeScript 类型定义的硬性要求包括：\n\n1. **必须为所有 Props、函数参数和返回值定义类型**，并统一放在对应的 `.types.ts` 文件中。  \n2. **对象类型使用 `interface` 定义**，**联合类型或别名使用 `type` 定义**。  \n3. **禁止使用 `any` 类型**；如果不确定具体类型，应使用 `unknown` 并配合类型守卫进行处理。  \n\n因此，`any` 类型在项目中是不允许使用的。",
+        "answer": "项目中对 TypeScript 类型定义的硬性要求包括：\n\n1. **必须为所有 Props、函数参数和返回值定义类型**，并统一放在对应的 `.types.ts` 文件中。  \n2. **对象类型使用 `interface`，联合类型或别名使用 `type`**。  \n3. **禁止使用 `any` 类型**；如果不确定具体类型，应使用 `unknown` 并配合类型守卫进行处理。  \n\n因此，`any` 类型在项目中是不能使用的。",
         "sources": ["project-react-rules.md", "project-react-rules.md", "project-react-rules.md"],
         "sourceMatchDetails": [
           {
@@ -234,25 +234,25 @@
           {
             "point": "所有 Props、函数参数、返回值都要定义类型",
             "matched": true,
-            "hitFragments": ["Props", "函数参数"],
+            "hitFragments": ["Props", "函数参数", "返回值都要定义类型"],
             "totalFragments": 3
           },
           {
             "point": "类型定义放在对应的 .types.ts 文件中",
             "matched": true,
-            "hitFragments": [".types.ts"],
+            "hitFragments": ["类型定义放在对应的", ".types.ts"],
             "totalFragments": 2
           },
           {
             "point": "使用 interface 定义对象类型，type 定义联合类型或别名",
             "matched": true,
-            "hitFragments": ["interface", "type"],
+            "hitFragments": ["interface", "定义对象类型", "type", "定义联合类型或别名"],
             "totalFragments": 4
           },
           {
             "point": "禁止使用 any 类型，不确定时使用 unknown 并配合类型守卫",
             "matched": true,
-            "hitFragments": ["禁止使用", "unknown", "并配合类型守卫"],
+            "hitFragments": ["禁止使用", "不确定时使用", "unknown", "并配合类型守卫"],
             "totalFragments": 4
           }
         ]
@@ -267,13 +267,13 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "keypoint_coverage": false,
+        "keypoint_coverage": true,
         "task_completed": true
       },
-      "passed": false,
-      "failureTypes": ["keypoint_miss"],
+      "passed": true,
+      "failureTypes": [],
       "actualOutput": {
-        "answer": "当生产环境的 JS 错误率升至 1%（超过阈值 0.5%）时，监控系统会触发自动回滚：  \n- **自动回滚**：系统会立即把 CDN 的回源指向上一版构建产物，从而恢复到之前的稳定版本。  \n- **实现方式**：OSS 中保留最近 5 个版本的构建产物，回滚只需执行 `npm run deploy:rollback`，该脚本会修改 CDN 配置，使其指向上一个版本的文件。  \n\n同时，错误率超过阈值还会通过企业微信和邮件发送告警。",
+        "answer": "当生产环境的 **JS 错误率** 超过 **0.5%** 时，系统会自动触发回滚操作，恢复到上一版本的构建产物。\n\n**回滚实现方式**  \n- OSS 中会保留最近 5 个版本的构建产物。  \n- 回滚只需把 CDN 的回源指向改为上一版本的文件，即执行项目提供的回滚脚本：\n\n```bash\nnpm run deploy:rollback\n```\n\n该命令会更新 CDN 配置，使用户再次访问时加载上一版的 `index-<hash>.js`、`vendor-<hash>.js` 等文件，从而快速恢复稳定状态。",
         "sources": ["deploy-cicd.md", "deploy-cicd.md", "project-react-rules.md"],
         "sourceMatchDetails": [
           {
@@ -284,14 +284,14 @@
         "keypointDetails": [
           {
             "point": "JS 错误率阈值是 0.5%，超过则自动回滚",
-            "matched": false,
-            "hitFragments": ["0.5%"],
+            "matched": true,
+            "hitFragments": ["错误率阈值是", "0.5%", "超过则自动回滚"],
             "totalFragments": 3
           },
           {
             "point": "回滚通过修改 CDN 回源指向实现",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["回源指向实现"],
             "totalFragments": 2
           },
           {
@@ -303,7 +303,7 @@
           {
             "point": "回滚命令：npm run deploy:rollback",
             "matched": true,
-            "hitFragments": ["deploy:rollback"],
+            "hitFragments": ["回滚命令：npm", "deploy:rollback"],
             "totalFragments": 2
           },
           {
@@ -324,13 +324,13 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "keypoint_coverage": false,
+        "keypoint_coverage": true,
         "task_completed": true
       },
-      "passed": false,
-      "failureTypes": ["keypoint_miss"],
+      "passed": true,
+      "failureTypes": [],
       "actualOutput": {
-        "answer": "根据现有文档无法回答此问题。",
+        "answer": "**一致的地方**\n\n1. **目录层级**  \n   - 两者都把组件放在 `src/components/`（或等价的根目录下的 `components/`）中，形成统一的组件根目录。\n\n2. **功能/业务划分**  \n   - 项目规范中在 `components/` 下面用 `common/` 存放通用组件，用 `[Feature]/`（业务组件）存放特定业务的组件。  \n   - `@swell/mobile-ui` 也是在同一个库里区分“核心组件”（如 `SearchBar`）和其他业务组件，遵循了“通用 vs 业务” 的划分思路。\n\n3. **按需加载 / Tree Shaking**  \n   - 项目规范虽然未明确说明，但通常配合 `index.tsx` 导出方式实现按需加载。  \n   - `@swell/mobile-ui` 明确支持按需加载和 Tree Shaking，两者在实现方式上是一致的。\n\n**不同的地方**\n\n1. **实际文件结构细节**  \n   - 项目规范给出的示例结构是 **`src/components/common/Button/`**",
         "sources": ["project-react-rules.md", "project-react-rules.md", "component-library.md"],
         "sourceMatchDetails": [
           {
@@ -345,26 +345,32 @@
         "keypointDetails": [
           {
             "point": "一致点：都使用 components/ 目录，通用组件放 common/ 子目录",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["一致点：都使用", "components/", "通用组件放", "common/"],
             "totalFragments": 4
           },
           {
             "point": "差异点：项目规范要求三个文件（index.tsx / ComponentName.tsx / .types.ts），组件库直接 import 使用",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": [
+              "差异点：项目规范要求三个文件（index.tsx",
+              "ComponentName.tsx",
+              ".types.ts）",
+              "组件库直接",
+              "import"
+            ],
             "totalFragments": 5
           },
           {
             "point": "项目规范要求组件文件不超过 300 行",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["项目规范要求组件文件不超过"],
             "totalFragments": 1
           },
           {
             "point": "组件命名都使用 PascalCase",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": ["组件命名都使用", "PascalCase"],
             "totalFragments": 2
           }
         ]
@@ -385,7 +391,7 @@
       "passed": true,
       "failureTypes": [],
       "actualOutput": {
-        "answer": "**项目中关于代码编写的禁止事项**\n\n| 编号 | 禁止内容 | 可能的原因（依据规范精神） |\n|------|----------|---------------------------|\n| 1 | 禁止使用嵌套的三元表达式（超过一层） | 多层嵌套会导致代码可读性和可维护性下降，容易产生逻辑错误。 |\n| 2 | 禁止使用 `any` 类型 | `any` 会破坏 TypeScript 的类型安全，导致潜在的运行时错误。 |\n| 3 | 禁止在组件中直接写复杂业务逻辑（应封装为 Hook） | 组件应保持 UI 渲染职责，复杂逻辑抽离为 Hook 可提升复用性、可测试性并保持组件简洁。 |\n| 4 | 禁止使用内联样式（除非是动态计算的值） | 内联样式破坏样式统一管理（TailwindCSS），不利于主题统一和样式复用。 |\n| 5 | 禁止删除代码中的注释（除非用户明确要求） | 注释是代码意图、约束和说明的关键，随意删除会降低可读性和团队协作效率。 |\n| 6 | 禁止在未完成功能时提交代码 | 未完成的代码可能导致构建失败或产生未预料的行为，影响主分支质量。 |\n| ",
+        "answer": "**项目中关于代码编写的禁止事项**\n\n| 编号 | 禁止内容 | 说明/原因 |\n|------|----------|-----------|\n| 9.1‑1 | 禁止使用嵌套的三元表达式（超过一层） | 多层嵌套会导致代码可读性极差，难以维护。 |\n| 9.1‑2 | 禁止使用 `any` 类型 | `any` 会破坏 TypeScript 的类型安全，增加潜在错误。 |\n| 9.1‑3 | 禁止在组件中直接写复杂业务逻辑（应封装为 Hook） | 组件应保持 UI 渲染职责，复杂逻辑抽离为 Hook 可提升复用性和可测试性。 |\n| 9.1‑4 | 禁止使用内联样式（除非是动态计算的值） | 内联样式破坏样式统一管理，违背 TailwindCSS 的使用原则。 |\n| 9.1‑5 | 禁止删除代码中的注释（除非用户明确要求） | 注释是代码意图和实现说明，删除会降低可维护性。 |\n| 9.2‑1 | 禁止在未完成功能时提交代码 | 未完成的代码可能导致构建失败或引入未测试的 bug。 |\n| 9.2‑2 | 禁止提交包含 `console.log` 的代码（调试用 consol",
         "sources": ["project-react-rules.md", "project-react-rules.md", "project-react-rules.md"],
         "sourceMatchDetails": [
           {
@@ -397,13 +403,13 @@
           {
             "point": "禁止嵌套三元表达式（超过一层）— 降低可读性",
             "matched": true,
-            "hitFragments": ["降低可读性"],
+            "hitFragments": ["禁止嵌套三元表达式", "降低可读性"],
             "totalFragments": 2
           },
           {
             "point": "禁止使用 any 类型 — 破坏类型安全",
             "matched": true,
-            "hitFragments": ["禁止使用"],
+            "hitFragments": ["禁止使用", "破坏类型安全"],
             "totalFragments": 2
           },
           {
@@ -437,8 +443,8 @@
   ],
   "summary": {
     "total": 8,
-    "passed": 4,
-    "passRate": 50,
+    "passed": 7,
+    "passRate": 87.5,
     "byDimension": {
       "retrieval_hit": {
         "total": 8,
@@ -452,8 +458,8 @@
       },
       "keypoint_coverage": {
         "total": 8,
-        "passed": 4,
-        "rate": 50
+        "passed": 7,
+        "rate": 87.5
       },
       "task_completed": {
         "total": 8,
@@ -464,10 +470,13 @@
     "byFailureType": {
       "retrieval_miss": 0,
       "citation_wrong": 0,
-      "keypoint_miss": 4,
+      "keypoint_miss": 1,
       "tool_choice_wrong": 0,
       "task_incomplete": 0,
-      "constraint_break": 0
+      "constraint_break": 0,
+      "field_incomplete": 0,
+      "spec_inaccurate": 0,
+      "scenario_mismatch": 0
     },
     "byDifficulty": {
       "simple": {
@@ -477,13 +486,13 @@
       },
       "medium": {
         "total": 3,
-        "passed": 1,
-        "rate": 33.3
+        "passed": 3,
+        "rate": 100
       },
       "hard": {
         "total": 2,
-        "passed": 1,
-        "rate": 50
+        "passed": 2,
+        "rate": 100
       }
     }
   }

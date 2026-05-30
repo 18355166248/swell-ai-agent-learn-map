@@ -25,7 +25,17 @@ app.post("/api/agent", async (req, res) => {
       return;
     }
 
-    const result = await runAgent(task.trim(), { silent: true });
+    // 兜底超时：6 分钟内必须完成
+    const AGENT_TIMEOUT = 360_000;
+    const result = await Promise.race([
+      runAgent(task.trim(), { silent: true, timeout: AGENT_TIMEOUT }),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`Agent 超时（${AGENT_TIMEOUT / 1000}s）`)),
+          AGENT_TIMEOUT,
+        ),
+      ),
+    ]);
     res.json(result);
   } catch (err: any) {
     console.error("Agent 失败:", err.message);

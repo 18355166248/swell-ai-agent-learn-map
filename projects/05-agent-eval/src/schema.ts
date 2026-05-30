@@ -12,7 +12,10 @@ export type FailureType =
   | "keypoint_miss" // 关键点覆盖率不足
   | "tool_choice_wrong" // 用错工具或顺序明显不合理
   | "task_incomplete" // 回答不完整，任务未完成
-  | "constraint_break"; // 触发了不该触发的边界问题
+  | "constraint_break" // 触发了不该触发的边界问题
+  | "field_incomplete" // Req-Analyst: 六维度字段不完整
+  | "spec_inaccurate" // Req-Analyst: 规范引用不准确
+  | "scenario_mismatch"; // Req-Analyst: 场景适配不足
 
 /** 检查维度结果 */
 export interface CheckResult {

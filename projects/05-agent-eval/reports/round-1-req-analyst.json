@@ -17,20 +17,20 @@
       "question": "新增专辑详情页的优惠券选择功能：用户在购买专辑时可以看到可用优惠券列表，选择一张优惠券后自动计算优惠后价格，点击购买进入支付流程。需要在支付面板上方展示优惠券选择区域。",
       "checks": {
         "field_completeness": true,
-        "spec_accuracy": false,
+        "spec_accuracy": true,
         "scenario_adaptation": true,
         "keypoint_coverage": true,
         "task_completed": true
       },
-      "passed": false,
+      "passed": true,
       "failureTypes": [],
       "actualOutput": {
-        "answer": "{\n  \"requirement\": \"新增专辑详情页的优惠券选择功能：用户在购买专辑时可以看到可用优惠券列表，选择一张优惠券后自动计算优惠后价格，点击购买进入支付流程。需要在支付面板上方展示优惠券选择区域。\",\n  \"pageChanges\": [\n    {\n      \"page\": \"AlbumDetail\",\n      \"changes\": \"在原有的支付面板上方新增优惠券选择区域，使用 CouponSelector 组件展示可用优惠券列表；选中优惠券后实时更新支付面板的金额显示；在用户点击购买按钮后继续走原有的支付流程。\"\n    }\n  ],\n  \"apiDependencies\": [\n    {\n      \"endpoint\": \"/api/payment/coupons\",\n      \"usage\": \"获取当前专辑可用的优惠券列表（传 productId 与原始 amount）\",\n      \"isNew\": false\n    },\n    {\n      \"endpoint\": \"/api/payment/order\",\n      \"usage\": ",
+        "answer": "{\n  \"requirement\": \"新增专辑详情页的优惠券选择功能：用户在购买专辑时可以看到可用优惠券列表，选择一张优惠券后自动计算优惠后价格，点击购买进入支付流程。需要在支付面板上方展示优惠券选择区域。\",\n  \"pageChanges\": [\n    {\n      \"page\": \"专辑详情页\",\n      \"changes\": \"在支付面板上方新增优惠券选择区域，使用 CouponSelector 组件展示通过 /api/payment/coupons 获取的可用优惠券列表；用户选择优惠券后实时计算并展示优惠后价格；购买按钮触发创建订单并进入支付流程。\"\n    }\n  ],\n  \"apiDependencies\": [\n    {\n      \"endpoint\": \"/api/payment/coupons\",\n      \"usage\": \"获取当前专辑可用优惠券列表（传 productId, amount）\",\n      \"isNew\": false\n    },\n    {\n      \"endpoint\": \"/api/payment/order\",\n   ",
         "keypointDetails": [
           {
             "point": "pageChanges 至少 1 条，page 为具体页面名（如 AlbumDetailPage、PaymentPanel），changes 描述具体改动",
-            "matched": false,
-            "hitFragments": ["pageChanges", "page", "changes"],
+            "matched": true,
+            "hitFragments": ["pageChanges", "page", "PaymentPanel）", "changes"],
             "totalFragments": 7
           },
           {
@@ -40,7 +40,8 @@
               "apiDependencies",
               "/api/payment/coupons",
               "/api/payment/order",
-              "isNew"
+              "isNew",
+              "true/false"
             ],
             "totalFragments": 5
           },
@@ -59,7 +60,7 @@
           {
             "point": "risks 至少 1 条，level 为 high/medium/low，mitigation 为具体可执行措施",
             "matched": true,
-            "hitFragments": ["risks", "level", "mitigation"],
+            "hitFragments": ["risks", "level", "high/medium/low", "mitigation"],
             "totalFragments": 5
           },
           {
@@ -84,12 +85,54 @@
       "targetProject": "03-req-analyst",
       "question": "优化现有分享功能：将分享面板从底部弹出改为全屏弹窗，新增分享海报生成功能（用户可保存图片分享到朋友圈）。分享成功后要上报分享结果到服务端。",
       "checks": {
-        "task_completed": false
+        "field_completeness": true,
+        "spec_accuracy": true,
+        "scenario_adaptation": true,
+        "keypoint_coverage": true,
+        "task_completed": true
       },
-      "passed": false,
-      "failureTypes": ["task_incomplete"],
-      "actualOutput": {},
-      "notes": "执行错误: http://localhost:8082 超过最大重试次数后仍不可达 — 请先启动: cd projects/03-req-analyst && npm start"
+      "passed": true,
+      "failureTypes": [],
+      "actualOutput": {
+        "answer": "{\n  \"requirement\": \"优化现有分享功能：将分享面板从底部弹出改为全屏弹窗，新增分享海报生成功能（用户可保存图片分享到朋友圈）。分享成功后要上报分享结果到服务端。\",\n  \"pageChanges\": [\n    {\n      \"page\": \"分享页面\",\n      \"changes\": \"将原先底部弹出的 ShareSheet 改为使用全屏 Modal 包裹的分享面板；新增“生成海报”按钮，点击后展示可保存的海报预览（使用 ImageViewer 组件）。\"\n    }\n  ],\n  \"apiDependencies\": [\n    {\n      \"endpoint\": \"/api/share/config\",\n      \"usage\": \"获取当前内容的分享配置信息（title、url、imageUrl 等）\",\n      \"isNew\": false\n    },\n    {\n      \"endpoint\": \"/api/share/report\",\n      \"usage\": \"分享成功后上报 shareType 与 success 状态\",\n ",
+        "keypointDetails": [
+          {
+            "point": "componentDependencies 必须含 ShareSheet（来源：component-spec.md 业务组件表）",
+            "matched": true,
+            "hitFragments": ["componentDependencies", "ShareSheet（来源：component-spec.md"],
+            "totalFragments": 3
+          },
+          {
+            "point": "apiDependencies 必须含 /api/share/config 或 /api/share/report（来源：api-spec.md 分享模块）",
+            "matched": true,
+            "hitFragments": [
+              "apiDependencies",
+              "/api/share/config",
+              "/api/share/report（来源：api-spec.md"
+            ],
+            "totalFragments": 4
+          },
+          {
+            "point": "trackingRequirements 必须含 share_click（来源：tracking-spec.md 业务事件表）",
+            "matched": true,
+            "hitFragments": ["trackingRequirements", "share_click（来源：tracking-spec.md"],
+            "totalFragments": 3
+          },
+          {
+            "point": "引用的组件名、接口路径、事件类型均真实存在于知识库中，无幻觉编造",
+            "matched": false,
+            "hitFragments": [],
+            "totalFragments": 4
+          },
+          {
+            "point": "不存在知识库中不存在的组件名、接口路径或事件类型",
+            "matched": false,
+            "hitFragments": [],
+            "totalFragments": 2
+          }
+        ]
+      },
+      "notes": "预设 2：规范引用准确性检查。将输出与知识库原文对照，验证每个引用的组件/接口/埋点事件是否真实存在。"
     },
     {
       "taskId": "req-004",
@@ -97,27 +140,27 @@
       "targetProject": "03-req-analyst",
       "question": "改造优惠券选择功能，允许用户同时选择多张优惠券组合使用，自动计算最大优惠金额。",
       "checks": {
-        "field_completeness": false,
+        "field_completeness": true,
         "spec_accuracy": true,
-        "scenario_adaptation": false,
+        "scenario_adaptation": true,
         "keypoint_coverage": false,
-        "task_completed": false
+        "task_completed": true
       },
       "passed": false,
-      "failureTypes": ["keypoint_miss", "task_incomplete"],
+      "failureTypes": ["keypoint_miss"],
       "actualOutput": {
-        "answer": "{\n  \"requirement\": \"改造优惠券选择功能，允许用户同时选择多张优惠券组合使用，自动计算最大优惠金额。\",\n  \"pageChanges\": [],\n  \"apiDependencies\": [],\n  \"trackingRequirements\": [],\n  \"componentDependencies\": [],\n  \"risks\": [],\n  \"testSuggestions\": []\n}",
+        "answer": "{\n  \"requirement\": \"改造优惠券选择功能，允许用户同时选择多张优惠券组合使用，自动计算最大优惠金额。\",\n  \"pageChanges\": [\n    {\n      \"page\": \"支付页面\",\n      \"changes\": \"将 CouponSelector 组件从单选改为多选，支持一次选择多张优惠券；在支付面板下方展示已选优惠券列表及累计优惠金额；在提交订单前自动计算并展示使用优惠后的最终支付金额。\"\n    }\n  ],\n  \"apiDependencies\": [\n    {\n      \"endpoint\": \"/api/payment/coupons\",\n      \"usage\": \"获取当前商品可用的优惠券列表（仍使用原有接口）\",\n      \"isNew\": false\n    },\n    {\n      \"endpoint\": \"/api/payment/order\",\n      \"usage\": \"创建订单时提交已选的多个 couponId（新增字段 couponIds）\",\n      \"isNew\": false\n    }\n ",
         "keypointDetails": [
           {
             "point": "risks 维度必须识别与 payment-flow.md 中'每笔订单只能使用 1 张优惠券'规则的冲突",
             "matched": false,
-            "hitFragments": ["risks"],
+            "hitFragments": ["risks", "张优惠券'规则的冲突"],
             "totalFragments": 5
           },
           {
             "point": "apiDependencies 中批量使用优惠券的接口应标注为 isNew: true",
-            "matched": false,
-            "hitFragments": ["apiDependencies"],
+            "matched": true,
+            "hitFragments": ["apiDependencies", "中批量使用优惠券的接口应标注为", "isNew:"],
             "totalFragments": 4
           },
           {
@@ -142,16 +185,16 @@
       "targetProject": "03-req-analyst",
       "question": "新增直播间礼物打赏功能，用户可以在直播间选择不同价位的礼物打赏给主播，打赏成功后播放特效动画。",
       "checks": {
-        "field_completeness": true,
-        "spec_accuracy": false,
-        "scenario_adaptation": true,
+        "field_completeness": false,
+        "spec_accuracy": true,
+        "scenario_adaptation": false,
         "keypoint_coverage": false,
-        "task_completed": true
+        "task_completed": false
       },
       "passed": false,
-      "failureTypes": ["keypoint_miss"],
+      "failureTypes": ["keypoint_miss", "task_incomplete", "field_incomplete", "scenario_mismatch"],
       "actualOutput": {
-        "answer": "{\n  \"requirement\": \"新增直播间礼物打赏功能，用户可以在直播间选择不同价位的礼物打赏给主播，打赏成功后播放特效动画。\",\n  \"pageChanges\": [\n    {\n      \"page\": \"LiveRoom\",\n      \"changes\": \"新增礼物打赏面板 GiftPanel，包含礼物列表、价格展示、选择数量、支付按钮；点击支付后弹出特效动画并跳转至打赏结果页。\"\n    }\n  ],\n  \"apiDependencies\": [\n    {\n      \"endpoint\": \"/api/gift/list\",\n      \"usage\": \"获取当前直播间可用礼物及其价格\",\n      \"isNew\": true\n    },\n    {\n      \"endpoint\": \"/api/gift/pay\",\n      \"usage\": \"发起礼物打赏支付（orderId, amount, payChannel, giftId, quantity）\",\n      \"isNew\": true\n    },\n    {\n      \"endpo",
+        "answer": "{\n  \"requirement\": \"新增直播间礼物打赏功能，用户可以在直播间选择不同价位的礼物打赏给主播，打赏成功后播放特效动画。\",\n  \"pageChanges\": [],\n  \"apiDependencies\": [],\n  \"trackingRequirements\": [],\n  \"componentDependencies\": [],\n  \"risks\": [],\n  \"testSuggestions\": []\n}",
         "keypointDetails": [
           {
             "point": "知识库中没有直播打赏相关规范，系统应基于已有知识合理推理",
@@ -162,7 +205,7 @@
           {
             "point": "不应编造不存在的接口/组件名，新接口/新组件应标注 isNew: true",
             "matched": false,
-            "hitFragments": ["true"],
+            "hitFragments": [],
             "totalFragments": 4
           },
           {
@@ -187,33 +230,36 @@
       "targetProject": "03-req-analyst",
       "question": "购买专辑成功后，弹出分享引导面板，用户可生成专辑海报分享到朋友圈。分享内容需携带来源追踪参数。",
       "checks": {
-        "field_completeness": false,
+        "field_completeness": true,
         "spec_accuracy": true,
-        "scenario_adaptation": false,
-        "keypoint_coverage": false,
-        "task_completed": false
+        "scenario_adaptation": true,
+        "keypoint_coverage": true,
+        "task_completed": true
       },
-      "passed": false,
-      "failureTypes": ["keypoint_miss", "task_incomplete"],
+      "passed": true,
+      "failureTypes": [],
       "actualOutput": {
-        "answer": "{\n  \"requirement\": \"购买专辑成功后，弹出分享引导面板，用户可生成专辑海报分享到朋友圈。分享内容需携带来源追踪参数。\",\n  \"pageChanges\": [],\n  \"apiDependencies\": [],\n  \"trackingRequirements\": [],\n  \"componentDependencies\": [],\n  \"risks\": [],\n  \"testSuggestions\": []\n}",
+        "answer": "{\n  \"requirement\": \"购买专辑成功后，弹出分享引导面板，用户可生成专辑海报分享到朋友圈。分享内容需携带来源追踪参数。\",\n  \"pageChanges\": [\n    {\n      \"page\": \"AlbumDetail\",\n      \"changes\": \"在购买专辑成功的回调中弹出 ShareSheet 分享面板，面板内展示生成的专辑海报并提供微信、朋友圈、复制链接等分享入口。\"\n    }\n  ],\n  \"apiDependencies\": [\n    {\n      \"endpoint\": \"/api/share/config\",\n      \"usage\": \"获取分享面板所需的分享链接、标题、海报图片 URL（含来源追踪参数）\",\n      \"isNew\": false\n    },\n    {\n      \"endpoint\": \"/api/upload/token\",\n      \"usage\": \"获取生成专辑海报所需的 OSS 上传凭证\",\n      \"isNew\": false\n    },\n    {\n      \"endpoint\"",
         "keypointDetails": [
           {
             "point": "应同时引用支付流程规范（payment_start/success）和分享规范（share_click, /api/share/report）",
-            "matched": false,
-            "hitFragments": [],
+            "matched": true,
+            "hitFragments": [
+              "应同时引用支付流程规范和分享规范（share_click",
+              "/api/share/report）"
+            ],
             "totalFragments": 2
           },
           {
             "point": "componentDependencies 应同时包含 PaymentPanel 和 ShareSheet",
-            "matched": false,
-            "hitFragments": ["componentDependencies"],
+            "matched": true,
+            "hitFragments": ["componentDependencies", "应同时包含", "ShareSheet"],
             "totalFragments": 4
           },
           {
             "point": "testSuggestions 应覆盖支付和分享的联动场景（如'支付成功 → 弹出分享引导 → 生成海报'）",
             "matched": true,
-            "hitFragments": ["testSuggestions", "弹出分享引导"],
+            "hitFragments": ["testSuggestions", "弹出分享引导", "生成海报'）"],
             "totalFragments": 4
           },
           {
@@ -229,42 +275,45 @@
   ],
   "summary": {
     "total": 5,
-    "passed": 0,
-    "passRate": 0,
+    "passed": 3,
+    "passRate": 60,
     "byDimension": {
       "keypoint_coverage": {
-        "total": 4,
-        "passed": 1,
-        "rate": 25
+        "total": 5,
+        "passed": 3,
+        "rate": 60
       },
       "task_completed": {
         "total": 5,
-        "passed": 2,
-        "rate": 40
+        "passed": 4,
+        "rate": 80
       },
       "field_completeness": {
-        "total": 4,
-        "passed": 2,
-        "rate": 50
+        "total": 5,
+        "passed": 4,
+        "rate": 80
       },
       "spec_accuracy": {
-        "total": 4,
-        "passed": 2,
-        "rate": 50
+        "total": 5,
+        "passed": 5,
+        "rate": 100
       },
       "scenario_adaptation": {
-        "total": 4,
-        "passed": 2,
-        "rate": 50
+        "total": 5,
+        "passed": 4,
+        "rate": 80
       }
     },
     "byFailureType": {
       "retrieval_miss": 0,
       "citation_wrong": 0,
-      "keypoint_miss": 3,
+      "keypoint_miss": 2,
       "tool_choice_wrong": 0,
-      "task_incomplete": 3,
-      "constraint_break": 0
+      "task_incomplete": 1,
+      "constraint_break": 0,
+      "field_incomplete": 1,
+      "spec_inaccurate": 0,
+      "scenario_mismatch": 1
     },
     "byDifficulty": {
       "simple": {
@@ -274,13 +323,13 @@
       },
       "medium": {
         "total": 2,
-        "passed": 0,
-        "rate": 0
+        "passed": 2,
+        "rate": 100
       },
       "hard": {
         "total": 3,
-        "passed": 0,
-        "rate": 0
+        "passed": 1,
+        "rate": 33.3
       }
     }
   }
