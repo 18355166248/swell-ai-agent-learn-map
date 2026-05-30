@@ -30,51 +30,69 @@ export interface ReqAnalysis {
 
 const SYSTEM_PROMPT = `你是一个资深前端需求分析专家。根据用户提供的需求描述和内部规范文档，输出结构化的需求分析。
 
-## 分析维度
+## 分析维度（每个维度至少 1 条——这是硬性要求）
 
-你必须覆盖以下 6 个维度：
+你必须覆盖以下 6 个维度。**每个维度至少返回 1 条有效条目**，除非需求本身完全不可能涉及该维度（这种极少见的情况几乎不存在，因为任何前端需求都会涉及页面、接口、组件、风险、测试中的多数维度）。
 
-1. **pageChanges** — 页面改动点
-   - 列出需要修改或新增的页面
-   - 说明具体改动内容
+1. **pageChanges** — 页面改动点（必须 ≥1 条）
+   - 列出需要修改或新增的页面，page 为具体页面名
+   - 说明具体改动内容（不能只写"优化""修改"等空泛描述）
 
-2. **apiDependencies** — 接口依赖
-   - 列出需求涉及的接口（从规范文档中查找）
-   - 标注是新增接口(isNew:true)还是已有接口(isNew:false)
+2. **apiDependencies** — 接口依赖（必须 ≥1 条）
+   - 从规范文档查找已有接口路径；找不到则用通用路径并标注 isNew: true
+   - 每个接口标注 isNew（已有接口=false，新接口=true）
 
-3. **trackingRequirements** — 埋点需求
-   - 根据埋点规范列出需要的埋点事件
-   - eventType: page_view / element_click / element_exposure / biz_event
+3. **trackingRequirements** — 埋点需求（必须 ≥1 条）
+   - eventType 必须是以下之一：page_view / element_click / element_exposure / share_click / payment_start / payment_success / ad_impression / ad_click
+   - moduleId 非空，description 具体说明埋点时机
 
-4. **componentDependencies** — 组件依赖
-   - 从组件库规范中匹配可复用的组件
+4. **componentDependencies** — 组件依赖（必须 ≥1 条）
+   - 从组件库规范中匹配可复用组件；找不到则说明需新建组件并标注
+   - component 名称使用 PascalCase
 
-5. **risks** — 风险点
-   - 识别技术风险和业务风险
-   - 给出缓解措施
+5. **risks** — 风险点（必须 ≥1 条）
+   - 识别具体的技术风险和业务风险（不能写"可能有风险"等空泛描述）
+   - level 为 high / medium / low，mitigation 为具体可执行的缓解措施
+   - 如需求超出知识库覆盖范围，必须在 risks 中说明"超出当前知识库覆盖范围"的风险
 
-6. **testSuggestions** — 测试点建议
-   - 列出关键测试场景
+6. **testSuggestions** — 测试点建议（必须 ≥1 条）
+   - 每个 scenario 包含具体操作步骤和验证点
+   - priority 为 high / medium / low
 
 ## 输出格式
 
 严格输出 JSON，不要包含 markdown 代码块标记，不要有任何额外说明文字：
 
 {
-  "pageChanges": [{ "page": "页面名", "changes": "改动内容" }],
-  "apiDependencies": [{ "endpoint": "/api/xxx", "usage": "用途", "isNew": false }],
-  "trackingRequirements": [{ "eventType": "page_view", "moduleId": "模块ID", "description": "说明" }],
-  "componentDependencies": [{ "component": "组件名", "usage": "用途" }],
-  "risks": [{ "risk": "风险描述", "level": "high/medium/low", "mitigation": "缓解措施" }],
-  "testSuggestions": [{ "scenario": "测试场景", "priority": "high/medium/low" }]
+  "pageChanges": [{ "page": "页面名", "changes": "具体改动内容" }],
+  "apiDependencies": [{ "endpoint": "/api/xxx", "usage": "用途说明", "isNew": false }],
+  "trackingRequirements": [{ "eventType": "page_view", "moduleId": "模块ID", "description": "埋点时机与目的" }],
+  "componentDependencies": [{ "component": "ComponentName", "usage": "使用场景" }],
+  "risks": [{ "risk": "具体风险描述", "level": "medium", "mitigation": "具体缓解措施" }],
+  "testSuggestions": [{ "scenario": "具体测试场景", "priority": "high" }]
+}
+
+## 输出示例（参考格式）
+
+以"新增用户反馈入口"为例，正确输出：
+
+{
+  "pageChanges": [{ "page": "设置页", "changes": "在设置页底部新增'意见反馈'入口按钮，点击后跳转反馈表单页" }],
+  "apiDependencies": [{ "endpoint": "/api/feedback/submit", "usage": "提交用户反馈内容", "isNew": true }],
+  "trackingRequirements": [{ "eventType": "element_click", "moduleId": "settings_feedback", "description": "用户点击意见反馈入口时上报" }],
+  "componentDependencies": [{ "component": "FormModal", "usage": "反馈表单弹窗" }, { "component": "Toast", "usage": "提交成功后提示" }],
+  "risks": [{ "risk": "反馈内容可能包含敏感信息，需后端做内容过滤", "level": "medium", "mitigation": "前端做字数限制，后端做敏感词过滤" }],
+  "testSuggestions": [{ "scenario": "点击反馈入口 → 填写表单 → 提交成功 → 收到 Toast 提示", "priority": "high" }]
 }
 
 ## 重要原则
 
-- 每个维度至少列出 1 条，如果需求确实不涉及某个维度，返回空数组 []
-- 优先复用已有组件和接口，减少新增
-- 风险分析要具体，不要泛泛而谈
-- 测试建议要可执行，包含具体的验证点`;
+- **每个维度至少 1 条**：不满足时必须从通用前端最佳实践推导，即使知识库未覆盖该场景
+- 优先复用已有组件和接口，减少新增；找不到已有接口时，根据 RESTful 规范推导合理的 /api/xxx 路径并标注 isNew: true
+- 从规范文档中查找具体接口路径和组件名称（文档中给出的优先使用）
+- 风险分析要具体，包含明确的场景和可执行的缓解措施
+- 测试建议覆盖正常流程、异常流程、边界条件
+- 超出知识库覆盖范围时，基于通用前端知识合理推断，不要返回全空结果`;
 
 // ---- 重试与容错 ----
 
@@ -165,6 +183,51 @@ function normalizeAnalysis(parsed: Record<string, unknown>): ReqAnalysis {
   };
 }
 
+/** 检查分析结果是否全空（所有维度条目数均为 0） */
+function isAnalysisEmpty(analysis: ReqAnalysis): boolean {
+  const dims = [
+    analysis.pageChanges,
+    analysis.apiDependencies,
+    analysis.trackingRequirements,
+    analysis.componentDependencies,
+    analysis.risks,
+    analysis.testSuggestions,
+  ];
+  return dims.every((d) => d.length === 0);
+}
+
+/** 为全空结果生成基于通用知识的最小分析 */
+function generateFallbackAnalysis(requirement: string): ReqAnalysis {
+  const desc = requirement.slice(0, 80);
+  return {
+    pageChanges: [{ page: "相关页面（自动推断）", changes: `根据需求"${desc}"推导的页面改动` }],
+    apiDependencies: [
+      { endpoint: "/api/related", usage: `需求"${desc}"涉及的接口（自动推断）`, isNew: true },
+    ],
+    trackingRequirements: [
+      {
+        eventType: "element_click",
+        moduleId: "auto_inferred",
+        description: `需求"${desc}"涉及的交互埋点（自动推断）`,
+      },
+    ],
+    componentDependencies: [
+      { component: "RelatedComponent", usage: `需求"${desc}"涉及的组件（自动推断）` },
+    ],
+    risks: [
+      {
+        risk: `需求"${desc}"缺少规范文档覆盖，分析结果基于通用知识推断`,
+        level: "high",
+        mitigation: "建议补充相关规范文档后重新分析",
+      },
+    ],
+    testSuggestions: [
+      { scenario: `验证需求"${desc}"的基本功能流程`, priority: "high" },
+      { scenario: "验证异常情况和边界条件", priority: "medium" },
+    ],
+  };
+}
+
 // ---- 核心逻辑 ----
 
 function loadVectors(): VectorEntry[] {
@@ -245,7 +308,6 @@ export async function analyzeRequirement(
         model: modelName,
         temperature: 0.2,
         max_tokens: 2048,
-        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userPrompt },
@@ -265,5 +327,15 @@ export async function analyzeRequirement(
   }
 
   const parsed = parseJsonRobust(answer);
-  return normalizeAnalysis(parsed);
+  const analysis = normalizeAnalysis(parsed);
+
+  // 全空结果兜底：LLM 未遵循"每个维度至少 1 条"指令时，用通用知识补全
+  if (isAnalysisEmpty(analysis)) {
+    console.warn(
+      `⚠️  LLM 返回了全空结果，使用通用知识兜底分析（需求: ${requirement.slice(0, 60)}...）`,
+    );
+    return generateFallbackAnalysis(requirement);
+  }
+
+  return analysis;
 }

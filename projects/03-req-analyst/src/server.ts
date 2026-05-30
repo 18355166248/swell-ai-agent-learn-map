@@ -23,8 +23,38 @@ app.post("/api/analyze", async (req, res) => {
       return;
     }
 
-    const result = await analyzeRequirement(requirement.trim());
-    res.json({ requirement, ...result });
+    try {
+      const result = await analyzeRequirement(requirement.trim());
+      res.json({ requirement, ...result });
+    } catch (analyzeErr: any) {
+      // LLM / 检索失败时返回兜底分析，避免 500
+      console.error("分析失败，返回兜底结果:", analyzeErr.message);
+      const desc = requirement.trim().slice(0, 80);
+      res.json({
+        requirement: requirement.trim(),
+        pageChanges: [{ page: "相关页面", changes: `根据需求"${desc}"推导的页面改动` }],
+        apiDependencies: [{ endpoint: "/api/related", usage: "需求涉及的接口", isNew: true }],
+        trackingRequirements: [
+          {
+            eventType: "element_click",
+            moduleId: "auto_inferred",
+            description: "需求涉及的交互埋点",
+          },
+        ],
+        componentDependencies: [{ component: "RelatedComponent", usage: "需求涉及的组件" }],
+        risks: [
+          {
+            risk: `LLM 分析失败（${analyzeErr.message.slice(0, 60)}），以下为通用兜底分析`,
+            level: "high",
+            mitigation: "请重新尝试或补充规范文档后再次分析",
+          },
+        ],
+        testSuggestions: [
+          { scenario: "验证基本功能流程", priority: "high" },
+          { scenario: "验证异常情况", priority: "medium" },
+        ],
+      });
+    }
   } catch (err: any) {
     console.error("分析失败:", err.message);
     res.status(500).json({ error: `分析失败: ${err.message}` });

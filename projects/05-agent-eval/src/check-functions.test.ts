@@ -245,6 +245,57 @@ describe("checkAgent", () => {
     // 答案说 "300ms" 和 "去抖" 和 "参数控制" 但没有 "debounceMs"
     expect(result.keypoint_coverage).toBe(true);
   });
+
+  it("Markdown 代码块不应阻碍精确匹配 (regression: agent-002)", () => {
+    const task = {
+      ...baseTask,
+      expectedKeyPoints: ["答案引用了内部文档中的具体规范内容（如 tracking-spec.md）"],
+    };
+    const result = checkAgent(
+      {
+        answer: "内部文档中关于埋点上报的规范要点（摘自 `tracking-spec.md`）…具体内容如下…",
+        steps: [{ toolName: "search_docs" }],
+        iterations: 2,
+      },
+      task,
+    );
+    // tracking-spec.md 被 markdown backtick 包裹，但应通过 L1a(plainAnswer) 命中
+    expect(result.keypoint_coverage).toBe(true);
+  });
+
+  it("数字空格归一化：'300 ms' 应匹配 '300ms' (regression: rag-003)", () => {
+    const task = {
+      ...baseTask,
+      expectedKeyPoints: ["debounceMs 参数控制去抖间隔，默认 300ms"],
+    };
+    const result = checkAgent(
+      {
+        answer: "去抖的默认间隔为 300 ms，由 debounce 参数控制。",
+        steps: [{ toolName: "search_docs" }],
+        iterations: 1,
+      },
+      task,
+    );
+    // '300 ms' (带空格) 归一化后变为 '300ms'，应匹配
+    expect(result.keypoint_coverage).toBe(true);
+  });
+
+  it("孤儿中文括号应被清理 (regression: agent-002 fragment)", () => {
+    const task = {
+      ...baseTask,
+      expectedKeyPoints: ["答案包含 tracking-spec.md）作为来源"],
+    };
+    const result = checkAgent(
+      {
+        answer: "答案以 tracking-spec.md 作为来源引用。",
+        steps: [{ toolName: "search_docs" }],
+        iterations: 1,
+      },
+      task,
+    );
+    // 关键点中 "tracking-spec.md）" 的孤立 ） 应被 cleanFragmentEnds 清理
+    expect(result.keypoint_coverage).toBe(true);
+  });
 });
 
 // ---- Req-Analyst 检查测试 ----

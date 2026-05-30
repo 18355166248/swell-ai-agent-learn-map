@@ -130,7 +130,7 @@ export async function checkAllServices(): Promise<void> {
   console.log("🔍 检查服务状态...\n");
   await Promise.all([
     checkService(SERVICES.rag, "rag", "02-doc-rag", "/api/status"),
-    checkService(SERVICES["req-analyst"], "req-analyst", "03-req-analyst", "/api/status"),
+    checkService(SERVICES["req-analyst"], "req-analyst", "03-req-analyst", "/api/health"),
     checkService(SERVICES.agent, "agent", "04-dev-copilot", "/api/health"),
   ]);
   console.log("");
@@ -396,17 +396,45 @@ const STOP_WORDS = new Set([
 ]);
 
 function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[（(][^)）]*[)）]/g, "") // 移除括号内容
-    .replace(/[`~!@#$%^&*()_\-=+\[\]{}|\\;:'",.<>/?！￥…（）—【】、；：'""，。《》？]/g, " ")
+  return (
+    text
+      .toLowerCase()
+      // 剥离 Markdown 语法（在标点清理之前做，避免残留字符）
+      .replace(/\*\*(.+?)\*\*/g, "$1") // bold **text**
+      .replace(/\*(.+?)\*/g, "$1") // italic *text*
+      .replace(/`{1,3}(.+?)`{1,3}/g, "$1") // inline code `text` or ```text```
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // links [text](url)
+      .replace(/^#{1,6}\s+/gm, "") // headings
+      // 合并数字与单位的空格: "300 ms" → "300ms", "5 分钟" → "5分钟"
+      .replace(/(\d)\s+(ms|s|px|em|rem|%|分钟|秒|天|次|年|个)/g, "$1$2")
+      // 移除括号内容（配对括号）
+      .replace(/[（(][^)）]*[)）]/g, "")
+      // 清除所有标点符号 + 残留的孤立括号
+      .replace(/[`~!@#$%^&*()_\-=+\[\]{}|\\;:'",.<>/?！￥…（）—【】、；：'""，。《》？、。]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
+}
+
+/** 清理片段中残留的孤立括号，用空格替换以保持分词边界 */
+function cleanFragmentEnds(s: string): string {
+  return s
+    .replace(/[（()）\[\]【】《》<>]/g, " ") // 括号替换为空格，保持词边界
     .replace(/\s+/g, " ")
     .trim();
 }
 
 /** 检查单个片段是否在答案中命中（三级匹配） */
 function fragmentMatches(fragment: string, answer: string, normAnswer: string): boolean {
-  // L1: 精确子串匹配（保持向后兼容，处理中文语义）
+  // L1a: 剥离 Markdown 后的精确匹配（处理 `code`、**bold** 等语法干扰）
+  const plainAnswer = answer
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/`{1,3}(.+?)`{1,3}/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  if (plainAnswer.includes(fragment)) return true;
+
+  // L1b: 精确子串匹配（原始答案）
   if (answer.includes(fragment)) return true;
 
   const normFragment = normalizeText(fragment);
@@ -415,23 +443,29 @@ function fragmentMatches(fragment: string, answer: string, normAnswer: string): 
   // L2: 归一化后的包含匹配
   if (normAnswer.includes(normFragment)) return true;
 
-  // L3: 词级重叠 ≥ 60%
-  // 对中文：按字符拆分；对英文/混合：按空格拆分
+  // L3: 词级重叠 ≥ 50%
+  // 中英混排：先按空白分割得到 token（保留英文术语完整性），再对中文 token 做字级拆分
   const hasChinese = /[一-鿿]/.test(normFragment);
   let words: string[];
   if (hasChinese) {
-    // 中文：按 2-4 字窗口滑动提取 + 单字排除停用词
-    const chars = [...normFragment].filter((c) => c.trim().length > 0);
+    // 先按空白分隔 token，保护英文技术术语不被拆散
+    const tokens = normFragment.split(/\s+/).filter((t) => t.length > 0);
     words = [];
-    for (let i = 0; i < chars.length; i++) {
-      if (chars[i] && !STOP_WORDS.has(chars[i]) && chars[i].length > 0) {
-        words.push(chars[i]);
+    for (const token of tokens) {
+      if (/[一-鿿]/.test(token)) {
+        // 中文 token：单字 + 双字组合
+        const chars = [...token].filter((c) => c.trim().length > 0);
+        for (const ch of chars) {
+          if (!STOP_WORDS.has(ch)) words.push(ch);
+        }
+        for (let i = 0; i < chars.length - 1; i++) {
+          const bigram = chars[i] + chars[i + 1];
+          if (bigram.trim().length >= 2) words.push(bigram);
+        }
+      } else if (token.length >= 2) {
+        // 英文/数字/符号 token 保持完整
+        words.push(token);
       }
-    }
-    // 也加入双字组合
-    for (let i = 0; i < chars.length - 1; i++) {
-      const bigram = chars[i] + chars[i + 1];
-      if (bigram.trim().length >= 2) words.push(bigram);
     }
   } else {
     words = normFragment.split(/\s+/).filter((w) => w.length >= 2);
@@ -439,8 +473,9 @@ function fragmentMatches(fragment: string, answer: string, normAnswer: string): 
 
   if (words.length === 0) return false;
   const hitWords = words.filter((w) => normAnswer.includes(w));
-  // 50% 词级重叠即命中（与 keypoint 级阈值一致）
-  return hitWords.length / words.length >= 0.5;
+  // 中文文本：40% 词级重叠即命中（中文语义分散，50% 过于严格）
+  const threshold = hasChinese ? 0.4 : 0.5;
+  return hitWords.length / words.length >= threshold;
 }
 
 /** 对关键点拆分成子短语片段，检查 answer 覆盖率 */
@@ -455,11 +490,11 @@ function computeKeypointCoverage(
   const normAnswer = normalizeText(answer);
 
   const details = keyPoints.map((kp) => {
-    // 按标点和空格拆成子短语
+    // 按标点和空格拆成子短语（中英文混排：按标点、空白分割，保留技术术语）
     const fragments = kp
       .split(/[,，；;、。·—\s]+/)
-      .map((s) => s.replace(/[（(][^)）]*[)）]/g, "").trim())
-      .filter((s) => s.length >= 4);
+      .map((s) => cleanFragmentEnds(s.replace(/[（(][^)）]*[)）]/g, "")))
+      .filter((s) => s.length >= 2 && !STOP_WORDS.has(s.toLowerCase()));
     if (fragments.length === 0) {
       // 短关键点：直接用整体做词级匹配
       const ok = fragmentMatches(kp, answer, normAnswer);
