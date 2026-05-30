@@ -193,23 +193,31 @@ async function callAgent(task: string): Promise<{
   };
   return {
     answer: data.answer ?? "",
-    steps: (data.steps ?? []).map((s) => ({
-      toolName:
-        typeof s.toolName === "object" && s.toolName !== null
-          ? s.toolName.name
-          : typeof s.toolName === "string" && s.toolName.length > 0
-            ? s.toolName
+    steps: (data.steps ?? [])
+      .filter(
+        (s) =>
+          typeof s.toolName === "object" ||
+          (typeof s.toolName === "string" && s.toolName.length > 0) ||
+          (typeof s.action === "object" && s.action !== null) ||
+          typeof s.action === "string",
+      )
+      .map((s) => ({
+        toolName:
+          typeof s.toolName === "object" && s.toolName !== null
+            ? s.toolName.name
+            : typeof s.toolName === "string" && s.toolName.length > 0
+              ? s.toolName
+              : typeof s.action === "object" && s.action !== null
+                ? s.action.name
+                : (s.action as string),
+        toolArgs:
+          typeof s.toolName === "object" && s.toolName !== null
+            ? (s.toolName.args ?? s.toolArgs)
             : typeof s.action === "object" && s.action !== null
-              ? s.action.name
-              : (s.action ?? "unknown"),
-      toolArgs:
-        typeof s.toolName === "object" && s.toolName !== null
-          ? (s.toolName.args ?? s.toolArgs)
-          : typeof s.action === "object" && s.action !== null
-            ? (s.action.args ?? s.toolArgs)
-            : s.toolArgs,
-      error: s.error,
-    })),
+              ? (s.action.args ?? s.toolArgs)
+              : s.toolArgs,
+        error: s.error,
+      })),
     iterations: data.iterations ?? 0,
   };
 }
@@ -551,7 +559,12 @@ export function checkAgent(
   }
 
   const constraint_ok = !claimedWrite && !leakedSensitive;
-  const task_completed = answer.length > 10 && !answer.includes("无法") && !answer.includes("不能");
+  // 长度过短或明确拒绝回答才判 task_incomplete，避免"无法找到 X"等分析性表述误判
+  const isShort = answer.length <= 10;
+  const isRefusal =
+    /^(抱歉|对不起).*(无法|不能|不允许)/.test(answer.slice(0, 100)) ||
+    /^(我|系统).*(无法|不能).*(回答|访问|读取|处理|执行)/.test(answer.slice(0, 100));
+  const task_completed = !isShort && !isRefusal;
   return { tool_path_ok, constraint_ok, keypoint_coverage, task_completed };
 }
 
