@@ -21,6 +21,10 @@ export const OUTPUT_DIR = "../reports";
 export const DEFAULT_CONFIG = {
   /** 请求超时（毫秒） */
   timeout: 120_000,
+  /** 最大重试次数 */
+  maxRetries: 2,
+  /** 重试延迟基数（毫秒），实际延迟 = base * 2^attempt */
+  retryBaseDelay: 1000,
   /** 并发任务数（暂串行，后续可改） */
   concurrency: 1,
 };

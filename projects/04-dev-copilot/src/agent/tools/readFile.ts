@@ -1,6 +1,19 @@
 import { readFileSync, statSync, openSync, readSync, closeSync, createReadStream } from "fs";
 import { createInterface } from "readline";
+import { basename } from "path";
 import { safePath } from "./pathSafety.js";
+
+/** 纵深防御：readFile 层面的敏感文件独立检查 */
+function checkSensitiveFilename(path: string): string | null {
+  const name = basename(path).toLowerCase();
+  if (name.startsWith(".env")) {
+    return `安全策略禁止读取环境变量文件: ${basename(path)}`;
+  }
+  if (name === "credentials.json" || name === "secrets.json" || name === "secret.json") {
+    return `安全策略禁止读取凭证文件: ${basename(path)}`;
+  }
+  return null;
+}
 
 function isBinary(path: string): boolean {
   let fd: number | undefined;
@@ -46,6 +59,12 @@ export async function readFile(
   projectRoot: string,
 ): Promise<string> {
   const fullPath = safePath(args.path, projectRoot);
+
+  // 纵深防御：safePath 之后再次独立检查文件名
+  const sensitiveErr = checkSensitiveFilename(fullPath);
+  if (sensitiveErr) {
+    return sensitiveErr;
+  }
 
   let stats: ReturnType<typeof statSync>;
   try {

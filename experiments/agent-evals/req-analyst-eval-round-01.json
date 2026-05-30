@@ -24,7 +24,8 @@
       "checks": {
         "field_completeness": true,
         "spec_accuracy": true,
-        "scenario_adaptation": true
+        "scenario_adaptation": true,
+        "keypoint_coverage": true
       },
       "notes": "预设 1：完整字段覆盖检查。如果某个维度返回空数组（如 apiDependencies 为空但优惠券场景需要支付接口），则判定字段完整性不满足。"
     },
@@ -46,7 +47,8 @@
       "checks": {
         "field_completeness": true,
         "spec_accuracy": true,
-        "scenario_adaptation": true
+        "scenario_adaptation": true,
+        "keypoint_coverage": true
       },
       "notes": "预设 2：规范引用准确性检查。将输出与知识库原文对照，验证每个引用的组件/接口/埋点事件是否真实存在。"
     },
@@ -67,7 +69,8 @@
       "checks": {
         "field_completeness": true,
         "spec_accuracy": true,
-        "scenario_adaptation": true
+        "scenario_adaptation": true,
+        "keypoint_coverage": true
       },
       "notes": "场景适配（C2 变体）：考察规则冲突检测。核心判断点是 risks 维度是否识别出与现有规范的矛盾。"
     },
@@ -87,7 +90,8 @@
       "checks": {
         "field_completeness": true,
         "spec_accuracy": true,
-        "scenario_adaptation": true
+        "scenario_adaptation": true,
+        "keypoint_coverage": true
       },
       "notes": "场景适配（C1 变体）：考察泛化边界。输入场景超出知识库覆盖范围时，系统能否合理推理而不编造。"
     },
@@ -113,7 +117,8 @@
       "checks": {
         "field_completeness": true,
         "spec_accuracy": true,
-        "scenario_adaptation": true
+        "scenario_adaptation": true,
+        "keypoint_coverage": true
       },
       "notes": "场景适配（C3 变体）：考察跨域协同。支付+分享联动场景，验证系统是否同时覆盖两个领域的规范。"
     }

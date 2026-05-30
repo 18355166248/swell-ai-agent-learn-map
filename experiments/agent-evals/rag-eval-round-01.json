@@ -22,7 +22,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "考察安全设计原因，不仅是事实提取。"
     },
@@ -42,7 +43,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "考察精确参数值提取，一问多参数。"
     },
@@ -63,7 +65,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "考察数值对比+设计原理，不能只答数字。"
     },
@@ -84,7 +87,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "考察异常流程和重试策略的完整提取。"
     },
@@ -105,7 +109,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "考察规则提取+替代方案，不能只说'不能用 any'。"
     },
@@ -127,7 +132,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "考察阈值触发+操作流程，需答出 0.5% 阈值和回滚机制。"
     },
@@ -148,7 +154,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "跨文档对比分析，需要从两份文档中分别提取再综合。"
     },
@@ -171,7 +178,8 @@
       "checks": {
         "retrieval_hit": true,
         "citation_ok": true,
-        "task_completed": true
+        "task_completed": true,
+        "keypoint_coverage": true
       },
       "notes": "长文本中多条目完整列举，考察召回覆盖面。"
     }

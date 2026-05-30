@@ -9,6 +9,7 @@ export type EvalType = "rag" | "agent" | "req-analyst";
 export type FailureType =
   | "retrieval_miss" // 没找到正确知识
   | "citation_wrong" // 找到了但引用错了
+  | "keypoint_miss" // 关键点覆盖率不足
   | "tool_choice_wrong" // 用错工具或顺序明显不合理
   | "task_incomplete" // 回答不完整，任务未完成
   | "constraint_break"; // 触发了不该触发的边界问题
@@ -17,6 +18,7 @@ export type FailureType =
 export interface CheckResult {
   retrieval_hit?: boolean; // RAG: 是否命中预期来源
   citation_ok?: boolean; // RAG: 引用来源是否正确
+  keypoint_coverage?: boolean; // 通用: 关键点覆盖率 ≥ 阈值
   task_completed: boolean; // 通用: 是否完成了任务本身
   tool_path_ok?: boolean; // Agent: 工具调用路径是否合理
   constraint_ok?: boolean; // Agent: 是否遵守系统边界
@@ -49,6 +51,11 @@ export interface EvalTaskResult {
     answer?: string;
     /** RAG/Agent: 引用来源或工具调用记录 */
     sources?: string[];
+    /** RAG: 来源匹配明细 */
+    sourceMatchDetails?: Array<{
+      expected: string;
+      matched: boolean;
+    }>;
     /** Agent: 工具调用步骤记录 */
     toolSteps?: Array<{
       toolName: string;
@@ -58,6 +65,13 @@ export interface EvalTaskResult {
     }>;
     /** Agent: 总迭代次数 */
     iterations?: number;
+    /** 关键点匹配明细 */
+    keypointDetails?: Array<{
+      point: string;
+      matched: boolean;
+      hitFragments: string[];
+      totalFragments: number;
+    }>;
   };
   /** 人工备注 */
   notes: string;
@@ -97,6 +111,7 @@ export interface EvalRoundReport {
     byDimension: {
       retrieval_hit?: { total: number; passed: number; rate: number };
       citation_ok?: { total: number; passed: number; rate: number };
+      keypoint_coverage?: { total: number; passed: number; rate: number };
       task_completed: { total: number; passed: number; rate: number };
       tool_path_ok?: { total: number; passed: number; rate: number };
       constraint_ok?: { total: number; passed: number; rate: number };
