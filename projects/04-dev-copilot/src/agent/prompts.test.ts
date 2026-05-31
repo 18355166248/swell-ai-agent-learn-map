@@ -9,6 +9,12 @@ describe("SYSTEM_PROMPT", () => {
     expect(SYSTEM_PROMPT).toContain("不要一开始连续使用 search_code 盲搜");
   });
 
+  it("forbids using search_docs as the main path for code tool inventory questions", () => {
+    expect(SYSTEM_PROMPT).toContain("这类问题的主路径是代码目录和注册表");
+    expect(SYSTEM_PROMPT).toContain("不是 search_docs");
+    expect(SYSTEM_PROMPT).toContain("必须优先读取 src/agent/tools/registry.ts");
+  });
+
   it("requires doc answers to carry explicit source markers on the final conclusion", () => {
     expect(SYSTEM_PROMPT).toContain("如果答案来自 search_docs");
     expect(SYSTEM_PROMPT).toContain("最终答案中显式写出来源文件名");
