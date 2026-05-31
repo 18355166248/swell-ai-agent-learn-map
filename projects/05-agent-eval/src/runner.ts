@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { SERVICES, DEFAULT_CONFIG, OUTPUT_DIR } from "./config.js";
-import { formatTaskSetHeader } from "./logging.js";
+import { formatTaskResultLine, formatTaskSetHeader } from "./logging.js";
 import type {
   EvalType,
   EvalTaskResult,
@@ -784,7 +784,10 @@ export async function runEval(
         });
         const kpInfo = `${kp.details.filter((d) => d.ok).length}/${ragTask.expectedKeyPoints.length} 关键点`;
         console.log(
-          `   ✅ 通过: ${checksAllPassed(checks)} | sources: ${output.sources.join(", ") || "(无)"} | ${kpInfo}`,
+          formatTaskResultLine(
+            checksAllPassed(checks),
+            `sources: ${output.sources.join(", ") || "(无)"} | ${kpInfo}`,
+          ),
         );
       } else if (task.type === "agent") {
         const agentTask = task as AgentTask;
@@ -823,7 +826,10 @@ export async function runEval(
         const toolSeq = toolNames.join(" → ");
         const kpInfo = `${kp.details.filter((d) => d.ok).length}/${agentTask.expectedKeyPoints.length} 关键点`;
         console.log(
-          `   ✅ 通过: ${checksAllPassed(checks)} | ${output.iterations} 轮 | 工具: ${toolSeq || "(无)"} | ${kpInfo}`,
+          formatTaskResultLine(
+            checksAllPassed(checks),
+            `${output.iterations} 轮 | 工具: ${toolSeq || "(无)"} | ${kpInfo}`,
+          ),
         );
       } else if (task.type === "req-analyst") {
         const reqTask = task as ReqAnalystTask;
@@ -853,7 +859,9 @@ export async function runEval(
           .map(([k, v]) => `${k}:${v}`)
           .join(", ");
         const kpInfo = `${kp.details.filter((d) => d.ok).length}/${reqTask.expectedKeyPoints.length} 关键点`;
-        console.log(`   ✅ 通过: ${checksAllPassed(checks)} | 维度条目: ${fieldInfo} | ${kpInfo}`);
+        console.log(
+          formatTaskResultLine(checksAllPassed(checks), `维度条目: ${fieldInfo} | ${kpInfo}`),
+        );
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

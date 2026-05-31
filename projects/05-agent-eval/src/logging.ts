@@ -15,3 +15,7 @@ export function formatTaskSetHeader(input: TaskSetHeaderInput): string {
     `   模型: ${input.model}\n`,
   ].join("\n");
 }
+
+export function formatTaskResultLine(passed: boolean, detail: string): string {
+  return passed ? `   ✅ 通过 | ${detail}` : `   ❌ 未通过 | ${detail}`;
+}
