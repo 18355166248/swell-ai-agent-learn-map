@@ -50,6 +50,10 @@ export interface AgentOptions {
   timeout?: number;
 }
 
+function isToolInventoryTask(task: string): boolean {
+  return /工具函数|工具清单|名称、参数和功能描述|列出每个工具/i.test(task);
+}
+
 function resolveModelName(explicitModel?: string): string {
   const model = explicitModel || process.env.MODEL_NAME;
   if (!model) {
@@ -109,6 +113,71 @@ function formatToolResult(raw: string): string {
   return raw.slice(0, MAX_TOOL_RESULT_CHARS) + `\n\n...[截断，共 ${raw.length} 字符]`;
 }
 
+async function preloadToolInventoryContext(
+  task: string,
+  projectRoot: string,
+  steps: AgentStep[],
+  onEvent?: (event: AgentStreamEvent) => void,
+): Promise<string | null> {
+  if (!isToolInventoryTask(task)) return null;
+
+  const preloadPlan = [
+    {
+      toolName: "list_files",
+      toolArgs: { dir: "projects/04-dev-copilot/src/agent/tools" },
+      note: "预取工具目录结构",
+    },
+    {
+      toolName: "read_file",
+      toolArgs: {
+        path: "projects/04-dev-copilot/src/agent/tools/registry.ts",
+        startLine: 1,
+        endLine: 220,
+      },
+      note: "预取工具注册表",
+    },
+  ] as const;
+
+  const sections: string[] = [];
+  for (const item of preloadPlan) {
+    onEvent?.({
+      type: "tool_call",
+      content: item.note,
+      iteration: 0,
+      toolName: item.toolName,
+      toolArgs: item.toolArgs as Record<string, any>,
+    });
+
+    const rawResult = await executeTool(
+      item.toolName,
+      item.toolArgs as Record<string, any>,
+      projectRoot,
+    );
+    const observation = formatToolResult(rawResult);
+
+    onEvent?.({
+      type: "tool_result",
+      content: observation,
+      iteration: 0,
+      toolName: item.toolName,
+    });
+
+    steps.push({
+      iteration: 0,
+      thought: item.note,
+      action: { name: item.toolName, args: item.toolArgs as Record<string, any> },
+      observation,
+    });
+    sections.push(`### ${item.note}\n${observation}`);
+  }
+
+  return [
+    "系统已预取与工具清单问题直接相关的代码上下文。请优先基于这些结果完成分析，避免重新回到无范围的 search_code 盲搜。",
+    "如果信息仍不足，再补充读取具体工具实现文件，但不要忽略 registry.ts 中的工具定义。",
+    ...sections,
+  ].join("\n\n");
+}
+
 export async function runAgent(task: string, options: AgentOptions = {}): Promise<AgentResult> {
   const {
     model,
@@ -130,12 +199,16 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
 
   type Message = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
+  const steps: AgentStep[] = [];
   const messages: Message[] = [
     { role: "system", content: SYSTEM_PROMPT },
     { role: "user", content: task },
   ];
+  const preloadedContext = await preloadToolInventoryContext(task, projectRoot, steps, onEvent);
+  if (preloadedContext) {
+    messages.push({ role: "user", content: preloadedContext });
+  }
 
-  const steps: AgentStep[] = [];
   let finalAnswer = "";
   let completedIterations = 0;
 
