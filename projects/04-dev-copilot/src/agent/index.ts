@@ -5,6 +5,8 @@ import { readFileSync, existsSync } from "fs";
 import OpenAI from "openai";
 import { SYSTEM_PROMPT } from "./prompts.js";
 import { executeTool, getToolDefinitions } from "./tools/registry.js";
+import { getConversation, createConversation, appendTurn, formatHistoryContext } from "./memory.js";
+import type { ConversationMemory, ConversationTurn } from "./memory.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,6 +32,10 @@ export interface AgentResult {
   answer: string;
   steps: AgentStep[];
   iterations: number;
+  /** 会话 ID（如果启用了记忆） */
+  conversationId?: string;
+  /** 本轮会话元信息（供调用方持久化） */
+  conversation?: ConversationMemory;
 }
 
 export interface AgentStreamEvent {
@@ -48,6 +54,8 @@ export interface AgentOptions {
   projectRoot?: string;
   /** 全局超时（毫秒），默认 300s */
   timeout?: number;
+  /** 会话 ID — 传入已有 ID 则继续该会话，否则创建新会话 */
+  conversationId?: string;
 }
 
 function isToolInventoryTask(task: string): boolean {
@@ -216,8 +224,24 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
     silent = false,
     projectRoot = detectProjectRoot(),
     timeout = 300_000,
+    conversationId,
   } = options;
   const modelName = resolveModelName(model);
+
+  // ---------- 会话记忆 ----------
+  let conversation: ConversationMemory | null = null;
+  if (conversationId) {
+    conversation = getConversation(conversationId);
+  }
+  if (!conversation && conversationId) {
+    // 传入的 ID 不存在，创建新的
+    conversation = createConversation(task);
+  } else if (!conversation && conversationId === undefined) {
+    // 未传 ID，自动创建新会话
+    conversation = createConversation(task);
+  }
+  const historyContext = conversation ? formatHistoryContext(conversation) : null;
+  // -------------------------------
 
   // 全局超时：通过 AbortController 在所有 LLM 调用间共享
   const abortController = new AbortController();
@@ -230,10 +254,15 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
   type Message = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
   const steps: AgentStep[] = [];
-  const messages: Message[] = [
-    { role: "system", content: SYSTEM_PROMPT },
-    { role: "user", content: task },
-  ];
+  const messages: Message[] = [{ role: "system", content: SYSTEM_PROMPT }];
+
+  // 注入对话历史上下文
+  if (historyContext) {
+    messages.push({ role: "system", content: historyContext });
+  }
+
+  messages.push({ role: "user", content: task });
+
   const preloadedContext = await preloadToolInventoryContext(task, projectRoot, steps, onEvent);
   if (preloadedContext) {
     messages.push({ role: "user", content: preloadedContext });
@@ -433,5 +462,22 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
   }
 
   clearTimeout(globalTimer);
-  return { answer: finalAnswer, steps, iterations: completedIterations };
+
+  // 保存本轮对话到会话记忆
+  if (conversation && finalAnswer) {
+    const stepsSummary = steps
+      .filter((s) => s.action)
+      .map((s) => `${s.action!.name}(${JSON.stringify(s.action!.args).slice(0, 80)})`)
+      .join(" → ");
+    appendTurn(conversation.id, task, finalAnswer, stepsSummary || undefined);
+    conversation = getConversation(conversation.id); // 重新加载以获取最新数据
+  }
+
+  return {
+    answer: finalAnswer,
+    steps,
+    iterations: completedIterations,
+    conversationId: conversation?.id,
+    conversation: conversation ?? undefined,
+  };
 }

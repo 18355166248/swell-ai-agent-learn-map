@@ -6,6 +6,7 @@ const args = process.argv.slice(2);
 
 let model: string | undefined;
 let maxIterations = 10;
+let conversationId: string | undefined;
 
 const positional: string[] = [];
 for (let i = 0; i < args.length; i++) {
@@ -13,17 +14,21 @@ for (let i = 0; i < args.length; i++) {
     model = args[++i];
   } else if (args[i] === "--max-iterations" || args[i] === "-n") {
     maxIterations = parseInt(args[++i], 10) || 10;
+  } else if (args[i] === "--conversation-id" || args[i] === "-c") {
+    conversationId = args[++i];
   } else if (args[i] === "--help" || args[i] === "-h") {
     console.log(`用法: tsx cli.ts [选项] <任务描述>
 
 选项:
-  --model, -m <name>        指定模型 (默认读取 .env 中的 MODEL_NAME)
-  --max-iterations, -n <n>  最大迭代次数 (默认: 10)
-  --help, -h                显示帮助
+  --model, -m <name>              指定模型 (默认读取 .env 中的 MODEL_NAME)
+  --max-iterations, -n <n>        最大迭代次数 (默认: 10)
+  --conversation-id, -c <id>      继续已有会话（不传则创建新会话）
+  --help, -h                      显示帮助
 
 示例:
   tsx cli.ts "分析这个项目有哪些工具函数"
   tsx cli.ts --model claude-3-5-sonnet "查看 README 内容"
+  tsx cli.ts -c abc123 "再看看支付相关的逻辑"
   tsx cli.ts -n 5 "搜索 Express server 相关代码"`);
     process.exit(0);
   } else {
@@ -87,10 +92,14 @@ try {
     model,
     maxIterations,
     onEvent: formatEvent,
+    conversationId,
   });
 
   console.log("\n" + "─".repeat(60));
   console.log(`完成: ${result.iterations} 轮迭代, ${result.steps.length} 个步骤`);
+  if (result.conversationId) {
+    console.log(`会话 ID: ${result.conversationId} (下次使用 -c ${result.conversationId} 继续)`);
+  }
 } catch (err: any) {
   console.error(`\n执行失败: ${err.message}`);
   process.exit(1);
