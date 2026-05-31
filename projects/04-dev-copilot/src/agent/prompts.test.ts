@@ -16,6 +16,9 @@ describe("SYSTEM_PROMPT", () => {
   });
 
   it("requires inventory answers to keep gathering until the full tool list is complete", () => {
+    expect(SYSTEM_PROMPT).toContain("“list_files” 之后的关键下一步应该是 “read_file”");
+    expect(SYSTEM_PROMPT).toContain("不能只靠 “search_code” 汇总工具清单");
+    expect(SYSTEM_PROMPT).toContain("至少读取 registry.ts 和一个工具实现文件");
     expect(SYSTEM_PROMPT).toContain("不能只读一个工具文件就收尾");
     expect(SYSTEM_PROMPT).toContain("不能以“无法生成总结”结束");
     expect(SYSTEM_PROMPT).toContain("必须补齐完整工具清单");
