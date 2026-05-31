@@ -15,6 +15,20 @@ describe("SYSTEM_PROMPT", () => {
     expect(SYSTEM_PROMPT).toContain("必须优先读取 src/agent/tools/registry.ts");
   });
 
+  it("requires inventory answers to keep gathering until the full tool list is complete", () => {
+    expect(SYSTEM_PROMPT).toContain("不能只读一个工具文件就收尾");
+    expect(SYSTEM_PROMPT).toContain("不能以“无法生成总结”结束");
+    expect(SYSTEM_PROMPT).toContain("必须补齐完整工具清单");
+    expect(SYSTEM_PROMPT).toContain("名称、参数、功能描述");
+  });
+
+  it("forces read-only code change suggestions to use concrete file paths without replacement instructions", () => {
+    expect(SYSTEM_PROMPT).toContain("如果用户已经点名文件");
+    expect(SYSTEM_PROMPT).toContain("直接在答案里写出该项目内相对路径");
+    expect(SYSTEM_PROMPT).toContain("不要给出“将 A 替换为 B”");
+    expect(SYSTEM_PROMPT).toContain("不要提供可直接复制执行的替换代码块");
+  });
+
   it("requires doc answers to carry explicit source markers on the final conclusion", () => {
     expect(SYSTEM_PROMPT).toContain("如果答案来自 search_docs");
     expect(SYSTEM_PROMPT).toContain("最终答案中显式写出来源文件名");
