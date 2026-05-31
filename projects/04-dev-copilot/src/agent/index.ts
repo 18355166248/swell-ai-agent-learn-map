@@ -54,6 +54,36 @@ function isToolInventoryTask(task: string): boolean {
   return /工具函数|工具清单|名称、参数和功能描述|列出每个工具/i.test(task);
 }
 
+function getTaskSearchScope(task: string): string | null {
+  if (isToolInventoryTask(task)) {
+    return "projects/04-dev-copilot/src/agent/tools";
+  }
+  if (/read_file|路径安全检查|目录穿越|executeTool|toolFactories|registry\.ts/i.test(task)) {
+    return "projects/04-dev-copilot/src/agent";
+  }
+  return null;
+}
+
+function normalizeToolArgsForTask(
+  task: string,
+  toolName: string,
+  toolArgs: Record<string, any>,
+): Record<string, any> {
+  if (toolName === "search_docs") return toolArgs;
+
+  const scopeDir = getTaskSearchScope(task);
+  if (!scopeDir) return toolArgs;
+
+  if (toolName === "list_files" || toolName === "search_code" || toolName === "grep") {
+    const dir = typeof toolArgs.dir === "string" ? toolArgs.dir.trim() : "";
+    if (!dir || dir === "." || dir === "src" || dir === "src/agent" || dir === "src/agent/tools") {
+      return { ...toolArgs, dir: scopeDir };
+    }
+  }
+
+  return toolArgs;
+}
+
 function resolveModelName(explicitModel?: string): string {
   const model = explicitModel || process.env.MODEL_NAME;
   if (!model) {
@@ -300,6 +330,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
         } catch {
           toolArgs = {};
         }
+        toolArgs = normalizeToolArgsForTask(task, toolName, toolArgs);
 
         log(`🔧 调用工具: ${toolName} ${JSON.stringify(toolArgs).slice(0, 120)}`);
 

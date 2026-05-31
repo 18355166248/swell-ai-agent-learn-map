@@ -120,4 +120,56 @@ describe("runAgent", () => {
     ]);
     expect(result.answer).toBe("最终答案");
   });
+
+  it("scopes broad code search calls to the tool directory for tool catalog questions", async () => {
+    executeToolMock
+      .mockResolvedValueOnce("tools dir")
+      .mockResolvedValueOnce("registry content")
+      .mockResolvedValueOnce("search results");
+    createMock
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: "继续搜索",
+              tool_calls: [
+                {
+                  id: "call-1",
+                  type: "function",
+                  function: {
+                    name: "search_code",
+                    arguments: JSON.stringify({ dir: "", query: "export function" }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: "最终答案",
+            },
+          },
+        ],
+      });
+
+    const { runAgent } = await import("./index.js");
+    await runAgent("这个项目提供了哪些工具函数？请列出每个工具的名称、参数和功能描述。", {
+      silent: true,
+      projectRoot: process.cwd(),
+    });
+
+    expect(executeToolMock).toHaveBeenNthCalledWith(
+      3,
+      "search_code",
+      {
+        dir: "projects/04-dev-copilot/src/agent/tools",
+        query: "export function",
+      },
+      process.cwd(),
+    );
+  });
 });
