@@ -17,13 +17,13 @@ for (let i = 0; i < args.length; i++) {
     console.log(`用法: tsx cli.ts [选项] <任务描述>
 
 选项:
-  --model, -m <name>        指定模型 (默认: openai/gpt-oss-120b:free)
+  --model, -m <name>        指定模型 (默认读取 .env 中的 MODEL_NAME)
   --max-iterations, -n <n>  最大迭代次数 (默认: 10)
   --help, -h                显示帮助
 
 示例:
   tsx cli.ts "分析这个项目有哪些工具函数"
-  tsx cli.ts --model openai/gpt-4o "查看 README 内容"
+  tsx cli.ts --model claude-3-5-sonnet "查看 README 内容"
   tsx cli.ts -n 5 "搜索 Express server 相关代码"`);
     process.exit(0);
   } else {
@@ -38,9 +38,15 @@ if (!task) {
   process.exit(1);
 }
 
-if (!process.env.OPENAI_API_KEY) {
-  console.error("错误: 未设置 OPENAI_API_KEY 环境变量");
-  console.error("请在 .env 文件中配置 OPENAI_API_KEY");
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error("错误: 未设置 ANTHROPIC_API_KEY 环境变量");
+  console.error("请在 .env 文件中配置 ANTHROPIC_API_KEY");
+  process.exit(1);
+}
+
+if (!model && !process.env.MODEL_NAME) {
+  console.error("错误: 未设置 MODEL_NAME 环境变量");
+  console.error("请在 .env 文件中配置 MODEL_NAME，或通过 --model 显式传入");
   process.exit(1);
 }
 
@@ -72,7 +78,7 @@ function formatEvent(event: AgentStreamEvent) {
 }
 
 console.log(`📋 任务: ${task}`);
-console.log(`🔧 模型: ${model || "openai/gpt-oss-120b:free"}`);
+console.log(`🔧 模型: ${model || process.env.MODEL_NAME}`);
 console.log(`⏳ 最大迭代: ${maxIterations}`);
 console.log("─".repeat(60));
 

@@ -13,11 +13,18 @@ config({ path: resolve(__dirname, "..", "..", "..", ".env"), override: false });
 config({ path: resolve(__dirname, "..", ".env"), override: false });
 
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "openai/gpt-oss-120b:free";
 const DATA_DIR = resolve(__dirname, "..", ".data");
 
 /** 单次 LLM 请求超时（毫秒） */
 const LLM_TIMEOUT = 60_000;
+
+function resolveModelName(explicitModel?: string): string {
+  const model = explicitModel || process.env.MODEL_NAME;
+  if (!model) {
+    throw new Error("未设置 MODEL_NAME 环境变量");
+  }
+  return model;
+}
 
 export interface ReqAnalysis {
   pageChanges: { page: string; changes: string }[];
@@ -238,8 +245,8 @@ function loadVectors(): VectorEntry[] {
 
 function getClient(): OpenAI {
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-    baseURL: process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL,
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    baseURL: process.env.ANTHROPIC_BASE_URL || DEFAULT_BASE_URL,
     defaultHeaders: {
       "HTTP-Referer": "https://github.com/swell-ai-agent-learn-map",
       "X-Title": "Req Analyst",
@@ -299,7 +306,7 @@ export async function analyzeRequirement(
   const userPrompt = buildUserPrompt(requirement, chunks);
 
   const client = getClient();
-  const modelName = model || DEFAULT_MODEL;
+  const modelName = resolveModelName(model);
 
   // 带超时和重试的 LLM 调用
   const makeLlmCall = () =>

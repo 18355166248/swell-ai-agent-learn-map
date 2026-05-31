@@ -1,7 +1,7 @@
 # 项目 05：Agent Evaluation Lab
 
 > 对应学习阶段：Phase 2A / Week 9+
-> 当前状态：首轮评估已完成，评估引擎 v1 就绪，待启动服务重跑第二轮回归评估
+> 当前状态：首轮评估已完成，评估引擎 v1 就绪，已支持按轮次重跑回归评估
 
 ## 这是什么
 
@@ -87,13 +87,28 @@ npm run eval:req          # 仅 Req-Analyst 评估
 # 运行全量评估
 npm run eval:all
 
+# 指定第二轮评估，自动产出 round-2-*.json 并尝试对比 round-1
+npm run eval:all -- --round=2
+
 # 指定模型
-npm run eval:all -- --model=openai/gpt-4o
+npm run eval:all -- --model=claude-3-5-sonnet
+npm run eval:all -- --round=2 --model=claude-3-5-sonnet
 # 或环境变量
-MODEL_NAME=openai/gpt-4o npm run eval:all
+MODEL_NAME=claude-3-5-sonnet npm run eval:all
 ```
 
 结果输出到 `reports/round-{n}-{type}.json`。
+
+说明：
+
+- 评估 CLI 不再内置默认模型
+- 必须通过 `--model=...` 或 `.env` 中的 `MODEL_NAME=...` 指定模型
+
+如果存在上一轮同类型报告，例如当前运行 `--round=2` 且目录里已有 `round-1-rag.json`，报告中的 `regression` 字段会自动给出：
+
+- `newFailures`
+- `newPasses`
+- `passRateDelta`
 
 ## 目录结构
 

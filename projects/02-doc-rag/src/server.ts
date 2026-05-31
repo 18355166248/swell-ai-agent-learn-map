@@ -38,6 +38,7 @@ mkdirSync(KB_DIR, { recursive: true });
 mkdirSync(DATA_DIR, { recursive: true });
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const DEFAULT_EMBEDDING_MODEL = "text-embedding-v4";
 
 const upload = multer({
   dest: KB_DIR,
@@ -134,6 +135,10 @@ app.post("/api/ask", async (req, res) => {
       return;
     }
 
+    console.log(
+      `[RAG] question="${question.trim().slice(0, 80)}" | model=${process.env.MODEL_NAME || "(未配置)"} | rewrite=${!!rewrite} | hybrid=${!!hybrid}`,
+    );
+
     const result = await askWithRag(question.trim(), vectors, {
       rewrite: !!rewrite,
       hybrid: !!hybrid,
@@ -223,4 +228,6 @@ app.get("/api/status", (_req, res) => {
 app.listen(PORT, () => {
   console.log(`RAG 服务已启动: http://localhost:${PORT}`);
   console.log(`知识库目录: ${KB_DIR}`);
+  console.log(`生成模型: ${process.env.MODEL_NAME || "(未配置)"}`);
+  console.log(`Embedding 模型: ${process.env.EMBEDDING_MODEL || DEFAULT_EMBEDDING_MODEL}`);
 });

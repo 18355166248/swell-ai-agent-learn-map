@@ -39,7 +39,7 @@ npm test
 
 # CLI 模式
 npx tsx cli.ts "分析这个项目有哪些工具函数"
-npx tsx cli.ts --model openai/gpt-4o "搜索埋点相关代码"
+npx tsx cli.ts --model claude-3-5-sonnet "搜索埋点相关代码"
 
 # Web 模式
 npx tsx src/server.ts        # 启动 → http://localhost:8083
@@ -47,8 +47,9 @@ npx tsx src/server.ts        # 启动 → http://localhost:8083
 
 环境要求：
 
-- 根目录 `.env` 中已配置 `OPENAI_API_KEY`
-- 如果使用 OpenRouter，建议同时配置 `OPENAI_BASE_URL`
+- 根目录 `.env` 中已配置 `ANTHROPIC_API_KEY`
+- 如果使用兼容网关，建议同时配置 `ANTHROPIC_BASE_URL`
+- 建议在 `.env` 中显式配置 `MODEL_NAME`
 - 正式演示优先使用稳定模型，不建议把免费模型作为唯一方案
 
 ## 技术架构
@@ -60,7 +61,7 @@ cli.ts / Web UI
          │
     ┌────┴────┐
     │  OpenAI  │  function calling
-    │  Chat    │  (支持 OpenRouter)
+    │  Chat    │  (支持兼容 OpenAI 协议的模型网关)
     └────┬────┘
          │
     ┌────┴────────────┐
@@ -145,7 +146,7 @@ Response: { "status": "ok" }
 
 ## 已知限制
 
-- **免费模型** `openai/gpt-oss-120b:free` 偶尔不调用工具直接回答，换成 `gpt-4o` 效果显著提升
+- 如果某个低成本模型不稳定地跳过工具调用，优先在 `.env` 中切换 `MODEL_NAME` 到更稳定的推理模型
 - `search_docs` 合并了两个向量库（02 + 03），不区分来源项目
 - `search_docs` 通过 `doc-rag` workspace 包复用能力，但向量索引仍来自 02 / 03 两个项目
 - 当前仍是**只读 Agent**，不提供自动修改文件或执行命令的能力

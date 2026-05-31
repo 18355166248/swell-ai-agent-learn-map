@@ -12,13 +12,20 @@ config({ path: resolve(__dirname, "..", "..", "..", ".env"), override: false });
 config({ path: resolve(__dirname, "..", ".env"), override: false });
 
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "openai/gpt-oss-120b:free";
+
+function resolveModelName(): string {
+  const model = process.env.MODEL_NAME;
+  if (!model) {
+    throw new Error("未设置 MODEL_NAME 环境变量");
+  }
+  return model;
+}
 const TOP_K = 3;
 
 function getClient(): OpenAI {
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-    baseURL: process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL,
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    baseURL: process.env.ANTHROPIC_BASE_URL || DEFAULT_BASE_URL,
     defaultHeaders: {
       "HTTP-Referer": "https://github.com/swell-ai-agent-learn-map",
       "X-Title": "Doc RAG",
@@ -80,9 +87,8 @@ async function main() {
   const prompt = buildPrompt(question, chunks);
 
   // 调用 LLM 流式输出。
-  // 注意：这里不读取根 .env 的 MODEL_NAME（那是 Anthropic CLI 用的），直接使用 OpenRouter 免费模型。
   const client = getClient();
-  const modelName = DEFAULT_MODEL;
+  const modelName = resolveModelName();
 
   console.log(`\n回答 (${modelName}):`);
   console.log("─".repeat(60));

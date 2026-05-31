@@ -8,12 +8,19 @@ config({ path: resolve(__dirname, "..", "..", "..", ".env"), override: false });
 config({ path: resolve(__dirname, "..", ".env"), override: false });
 
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "openai/gpt-oss-120b:free";
+
+function resolveModelName(explicitModel?: string): string {
+  const model = explicitModel || process.env.MODEL_NAME;
+  if (!model) {
+    throw new Error("未设置 MODEL_NAME 环境变量");
+  }
+  return model;
+}
 
 function getClient(): OpenAI {
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-    baseURL: process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL,
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    baseURL: process.env.ANTHROPIC_BASE_URL || DEFAULT_BASE_URL,
     defaultHeaders: {
       "HTTP-Referer": "https://github.com/swell-ai-agent-learn-map",
       "X-Title": "Doc RAG",
@@ -42,7 +49,7 @@ const REWRITE_PROMPT = `你是一个搜索查询优化器。将用户问题扩�
  */
 export async function rewriteQuery(question: string, model?: string): Promise<string> {
   const client = getClient();
-  const modelName = model || DEFAULT_MODEL;
+  const modelName = resolveModelName(model);
 
   try {
     const response = await client.chat.completions.create({

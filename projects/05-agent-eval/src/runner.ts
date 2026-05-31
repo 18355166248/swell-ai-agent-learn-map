@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { SERVICES, DEFAULT_CONFIG, OUTPUT_DIR } from "./config.js";
+import { formatTaskSetHeader } from "./logging.js";
 import type {
   EvalType,
   EvalTaskResult,
@@ -184,7 +185,7 @@ async function callAgent(task: string): Promise<{
   const data = (await res.json()) as {
     answer: string;
     steps: Array<{
-      action?: string;
+      action?: string | { name: string; args?: Record<string, unknown> };
       toolName?: string | { name: string; args?: Record<string, unknown> };
       toolArgs?: Record<string, unknown>;
       error?: string;
@@ -616,7 +617,9 @@ export function checkReqAnalyst(
   try {
     const data = JSON.parse(result.answer) as Record<string, unknown>;
     const apis = (data.apiDependencies ?? []) as Array<{ endpoint?: string; isNew?: boolean }>;
-    const comps = (data.componentDependencies ?? []) as Array<string | { name?: string }>;
+    const comps = (data.componentDependencies ?? []) as Array<
+      string | { name?: string; component?: string }
+    >;
     const trackings = (data.trackingRequirements ?? []) as Array<{
       eventType?: string;
       moduleId?: string;
@@ -727,9 +730,15 @@ export async function runEval(
   const fullPath = resolve(__dirname, taskSetPath);
   const taskSet: TaskSet = JSON.parse(readFileSync(fullPath, "utf-8"));
 
-  console.log(`\n📋 加载任务集: ${taskSet.meta.name}`);
-  console.log(`   描述: ${taskSet.meta.description}`);
-  console.log(`   任务数: ${taskSet.tasks.length}\n`);
+  console.log(
+    formatTaskSetHeader({
+      name: taskSet.meta.name,
+      description: taskSet.meta.description,
+      taskCount: taskSet.tasks.length,
+      round,
+      model: config.model,
+    }),
+  );
 
   const results: EvalTaskResult[] = [];
 

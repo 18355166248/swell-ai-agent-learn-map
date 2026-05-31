@@ -11,16 +11,16 @@ config({ path: resolve(__dirname, "..", ".env"), override: false });
 /** OpenRouter 默认地址 */
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
-/** 默认 Embedding 模型（OpenRouter 免费可用，1536 维） */
-const DEFAULT_EMBEDDING_MODEL = "openai/text-embedding-3-small";
+/** 默认 Embedding 模型 */
+const DEFAULT_EMBEDDING_MODEL = "text-embedding-v4";
 
 /** Embedding 向量 */
 export type Embedding = number[];
 
 function getClient(): OpenAI {
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-    baseURL: process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL,
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    baseURL: process.env.ANTHROPIC_BASE_URL || DEFAULT_BASE_URL,
     defaultHeaders: {
       "HTTP-Referer": "https://github.com/swell-ai-agent-learn-map",
       "X-Title": "Doc RAG",
@@ -30,7 +30,7 @@ function getClient(): OpenAI {
 
 /**
  * 将单条文本转换为向量。
- * 返回的向量维度取决于模型（text-embedding-3-small 为 1536 维）。
+ * 返回的向量维度取决于模型。
  */
 export async function getEmbedding(text: string, model?: string): Promise<Embedding> {
   const client = getClient();

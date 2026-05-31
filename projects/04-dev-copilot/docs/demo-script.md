@@ -15,7 +15,7 @@
 在仓库根目录确认：
 
 ```bash
-cat .env | rg OPENAI_API_KEY
+cat .env | rg ANTHROPIC_API_KEY
 ```
 
 如果使用默认免费模型，演示稳定性会差一些。正式分享建议优先使用 `gpt-4o` 或其他稳定模型。

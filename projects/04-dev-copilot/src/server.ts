@@ -25,6 +25,10 @@ app.post("/api/agent", async (req, res) => {
       return;
     }
 
+    console.log(
+      `[DevCopilot] task="${task.trim().slice(0, 80)}" | model=${process.env.MODEL_NAME || "(未配置)"}`,
+    );
+
     // 兜底超时：6 分钟内必须完成
     const AGENT_TIMEOUT = 360_000;
     const result = await Promise.race([
@@ -50,6 +54,10 @@ app.get("/api/agent/stream", async (req, res) => {
     res.status(400).json({ error: "请提供 task 参数" });
     return;
   }
+
+  console.log(
+    `[DevCopilot/stream] task="${task.slice(0, 80)}" | model=${process.env.MODEL_NAME || "(未配置)"}`,
+  );
 
   res.writeHead(200, {
     "Content-Type": "text/event-stream",
@@ -111,4 +119,5 @@ app.get("/api/health", (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Dev Copilot 服务已启动: http://localhost:${PORT}`);
+  console.log(`生成模型: ${process.env.MODEL_NAME || "(未配置)"}`);
 });

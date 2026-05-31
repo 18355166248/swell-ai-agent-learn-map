@@ -12,7 +12,6 @@ config({ path: resolve(__dirname, "..", "..", "..", "..", ".env"), override: fal
 config({ path: resolve(__dirname, "..", "..", ".env"), override: false });
 
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
-const DEFAULT_MODEL = "openai/gpt-oss-120b:free";
 const MAX_TOOL_RESULT_CHARS = 8000;
 /** 单次 LLM 请求超时（毫秒） */
 const LLM_TIMEOUT = 90_000;
@@ -51,10 +50,18 @@ export interface AgentOptions {
   timeout?: number;
 }
 
+function resolveModelName(explicitModel?: string): string {
+  const model = explicitModel || process.env.MODEL_NAME;
+  if (!model) {
+    throw new Error("未设置模型，请通过参数传入，或在 .env 中配置 MODEL_NAME");
+  }
+  return model;
+}
+
 function getClient(): OpenAI {
   return new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
-    baseURL: process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL,
+    apiKey: process.env.ANTHROPIC_API_KEY || "",
+    baseURL: process.env.ANTHROPIC_BASE_URL || DEFAULT_BASE_URL,
     defaultHeaders: {
       "HTTP-Referer": "https://github.com/swell-ai-agent-learn-map",
       "X-Title": "Dev Copilot",
@@ -104,13 +111,14 @@ function formatToolResult(raw: string): string {
 
 export async function runAgent(task: string, options: AgentOptions = {}): Promise<AgentResult> {
   const {
-    model = DEFAULT_MODEL,
+    model,
     maxIterations = 6,
     onEvent,
     silent = false,
     projectRoot = detectProjectRoot(),
     timeout = 300_000,
   } = options;
+  const modelName = resolveModelName(model);
 
   // 全局超时：通过 AbortController 在所有 LLM 调用间共享
   const abortController = new AbortController();
@@ -137,7 +145,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
 
   log(`========== Agent 启动 ==========`);
   log(`任务: ${task.slice(0, 120)}${task.length > 120 ? "..." : ""}`);
-  log(`模型: ${model} | 最大迭代: ${maxIterations} | 工具数: ${tools.length}`);
+  log(`模型: ${modelName} | 最大迭代: ${maxIterations} | 工具数: ${tools.length}`);
 
   for (let iteration = 1; iteration <= maxIterations; iteration++) {
     completedIterations = iteration;
@@ -149,7 +157,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
     const response = await retryWithBackoff(() =>
       client.chat.completions.create(
         {
-          model,
+          model: modelName,
           messages,
           tools,
           temperature: 0.3,
@@ -289,7 +297,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
       const t0 = Date.now();
       const response = await client.chat.completions.create(
         {
-          model,
+          model: modelName,
           messages,
           temperature: 0.3,
           max_tokens: 2048,
