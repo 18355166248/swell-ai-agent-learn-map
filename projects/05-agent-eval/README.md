@@ -1,7 +1,7 @@
 # 项目 05：Agent Evaluation Lab
 
 > 对应学习阶段：Phase 2A / Week 9+
-> 当前状态：首轮评估已完成，评估引擎 v1 就绪，已支持按轮次重跑回归评估
+> 当前状态：评估引擎 v1 已稳定运行，支持按轮次重跑 / 环境变量锁定模型；`04-dev-copilot` 已在 `agent-eval-round-01` 的 `round-4` 达到 `5/5 = 100%`
 
 ## 这是什么
 
@@ -98,6 +98,13 @@ MODEL_NAME=claude-3-5-sonnet npm run eval:all
 ```
 
 结果输出到 `reports/round-{n}-{type}.json`。
+
+最近一次关键结果：
+
+- `04-dev-copilot` 在 `official-deepseek-v4-pro` 模型下，`agent-eval-round-01` 的 `round-4` 达到 `5/5 = 100%`
+- 通过点主要来自两类收敛：
+  - 工具清单类问题明确收敛到 `list_files -> read_file(registry.ts)` 的代码路径
+  - 边界拒绝类问题收紧为“只读建议 + 具体路径定位”，避免落成可直接执行的改代码话术
 
 说明：
 
