@@ -2,9 +2,9 @@
 
 ## 当前阶段判断
 
-🟡 进行中（启动日期：2026-05-29）
+✅ 完成（启动日期：2026-05-29，完成日期：2026-05-31）
 
-这一阶段的重点不是继续堆功能，而是建立评估体系，让后面的 Memory、Human-in-the-loop、Workflow Integration 都有可验证基础。
+评估体系已完整搭建并经过 7 轮迭代验证，`04-dev-copilot` Agent 在 round 4 达到 5/5=100%。评估引擎稳定，后续可随时按 `--round=N --model=xxx` 回归重跑。
 
 ## 本周想回答的问题
 
@@ -90,8 +90,8 @@
 - [x] 评估结果 Schema — `projects/05-agent-eval/src/schema.ts`
 - [x] 评估报告模板 — `projects/05-agent-eval/reports/report-template.md`
 - [x] Eval Runner — `projects/05-agent-eval/src/runner.ts` + `cli.ts`（支持 rag/agent/req-analyst/all 四种模式）
-- [ ] 第一版手工评估结果与失败分类记录（需启动三个服务：`8081/8082/8083`，然后运行 `npm run eval:all`）
-- [ ] Week 9 总结（决定 Week 10 是否进入 Memory）
+- [x] 第一版评估结果与失败分类记录（已完成 7 轮 Agent 评估 + 首轮 RAG/Req-Analyst 评估）
+- [x] Week 9 总结（决定 Week 10 进入 Memory，评估体系就绪）
 
 ## 过程中要特别注意
 
@@ -99,3 +99,39 @@
 - 先把任务定义和失败分类说清楚
 - 评估集最好来自真实任务，而不是纯概念题
 - 每个失败案例都标注具体原因（属于五种分类中的哪一种），不做笼统的"不够好"
+
+## Week 9 总结
+
+### 评估体系的成果
+
+经过 3 天集中搭建和 7 轮迭代，`05-agent-eval` 已经是一个可以长期使用的回归工具：
+
+- **架构**：`schema.ts`（类型）→ `runner.ts`（执行逻辑）→ `cli.ts`（CLI 入口），三层清晰
+- **任务覆盖**：RAG 8 + Agent 5 + Req-Analyst 5 场景，simple/medium/hard 各有覆盖
+- **评分维度**：`keypoint_coverage` / `task_completed` / `tool_path_ok` / `constraint_ok`，正交不重叠
+- **失败分类**：9 种 failureType，每个失败案例都能定位到具体原因
+- **回归能力**：自动加载上一轮报告，计算 `newFailures` / `newPasses` / `passRateDelta`
+
+### 7 轮 Agent 评估的关键发现
+
+| Round | 通过率     | 关键变化                                                |
+| ----- | ---------- | ------------------------------------------------------- |
+| 1     | 3/5 (60%)  | 初始基线，工具选择出错 + 约束穿透                       |
+| 2-3   | 3/5 (60%)  | 收紧 Prompt 后安全约束改善，但工具清单类问题仍不稳定    |
+| 4     | 5/5 (100%) | 要求 `list_files → read_file(registry.ts)` 代码路径生效 |
+| 5-6   | —          | Prompt 微调，拒绝话术收敛                               |
+| 7     | 4/5 (80%)  | maxTokens=2048 导致输出截断，非能力问题                 |
+
+核心结论：
+
+1. **工具清单类问题需要代码路径约束** — 让 Agent"先读 registry.ts"比让它"列出所有工具"更稳定
+2. **安全约束需要双重保障** — System Prompt 层面 + safePath 代码层面，两者互补
+3. **token 限制影响评估公平性** — 应该对长输出任务使用更大的 maxTokens
+
+### 对 Week 10 的判断
+
+Week 10 应该进入 **Memory（对话记忆）**：
+
+- 评估体系已经就绪，后续任何变更都有回归基线
+- Agent 目前是"无状态"的，每次对话独立——加入 Memory 后每次变更都有评估能验证是否退化
+- 这是从"单次智能"到"持续协作"的关键一步
