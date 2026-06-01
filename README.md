@@ -4,9 +4,9 @@
 
 ## 当前状态
 
-- 当前日期：2026-05-29
-- 当前阶段：Week 8 完成
-- 当前重点：归档 8 周学习闭环，并为后续阶段预留扩展方向
+- 当前日期：2026-06-01
+- 当前阶段：Week 11 启动 — LangGraph 入门，为 Human-in-the-loop 做准备
+- 当前重点：用 LangGraph `StateGraph` 重写手写 ReAct 循环，对比两版差异
 
 ## 这个仓库到底在记录什么
 
@@ -59,7 +59,7 @@ swell-ai-agent-learn-map/
 
 ### 目标结构
 
-下面这些内容属于后续可继续扩展的方向，不代表当前 8 周闭环必须全部完成：
+下面这些内容属于后续可继续扩展的方向，不代表第一阶段闭环必须全部完成：
 
 - `docs/concepts/*.md`：按主题沉淀核心概念笔记
 - `docs/stages/*.md`：按阶段沉淀“学会了什么 / 为什么会进入下一阶段”
@@ -103,17 +103,21 @@ swell-ai-agent-learn-map/
 
 ## 下一阶段建议
 
-如果继续往下学，优先级建议是：
+当前处于 Phase 2C 的技术铺垫阶段，先引入 LangGraph 再进入 Human-in-the-loop：
 
-1. `Evaluation`：建立 RAG / Agent 的评估集和回归机制
-2. `Memory`：学习会话记忆、任务状态和长期上下文
-3. `Human-in-the-loop`：把审批、确认、回滚加进 Agent 工作流
-4. `Workflow`：让 Agent 真正嵌进研发流程，而不只是回答问题
+1. `LangGraph 入门`（Week 11）：用 `StateGraph` 重写 Agent ReAct 循环，对比手写版差异
+2. `Human-in-the-loop`（Week 12）：`interrupt()` + `Command` 实现人机确认流
+3. `安全写操作`（Week 13）：审批式写操作 + diff review + 回滚
+4. `Workflow`（Phase 2D）：`StateGraph` 编排完整研发链路
+
+> 详细规划见 `ROADMAP.md` 和 `docs/next-phase-direction.md`
 
 ## 技术栈取舍
 
-| 层级       | 选择                                                     |
-| ---------- | -------------------------------------------------------- |
-| 第一优先级 | TypeScript、Node.js、OpenAI SDK、Embedding、RAG Pipeline |
-| 第二优先级 | LangChain / LlamaIndex、pgvector、MCP、Agent Workflow    |
-| 暂不投入   | 模型训练、微调、GPU 部署                                 |
+| 层级       | 选择                                                                          |
+| ---------- | ----------------------------------------------------------------------------- |
+| 第一优先级 | TypeScript、Node.js、OpenAI SDK、LangGraph、Embedding、RAG Pipeline           |
+| 第二优先级 | pgvector、MCP、LangChain（仅取 Tool/Message 基类，不碰 Chain/Retriever 抽象） |
+| 暂不投入   | 模型训练、微调、GPU 部署、LlamaIndex、多 Agent 编排框架                       |
+
+> 技术选型理由：经过 10 周手写 ReAct/MemoryStore/ToolRegistry/Eval 积累，底层原理已充分理解。Week 11 起引入 LangGraph 作为编排框架，解决手写状态机在 Human-in-the-loop 和 Workflow 场景的复杂度问题。LangChain 仅在 LangGraph 需要其 Tool/Message 基类时接触，不主动学习其 Chain/Retriever 抽象（已有更好的自建实现）。

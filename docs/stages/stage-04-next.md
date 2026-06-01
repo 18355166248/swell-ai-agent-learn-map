@@ -1,44 +1,40 @@
 # 阶段 04：Next
 
-## 下一阶段不该再学什么
+> 更新于 2026-06-01。Evaluation（Week 9）和 Memory（Week 10）已完成，当前进入 LangGraph 阶段。
 
-不建议下一步马上去做更复杂的多 Agent 编排，或者再堆一个“更酷的 demo”。
+## 当前阶段：LangGraph 入门（为 Human-in-the-loop 做铺垫）
 
-你现在缺的不是新名词，而是把已有能力变成更稳定的系统方法。
+10 周手写积累完成（Prompt → RAG → Agent → Eval → Memory），底层原理理解充分。
 
-## 下一阶段最值得补的 4 个方向
+Week 11 起引入 **LangGraph** 作为编排框架。核心理由：
 
-### 1. Evaluation
+- `StateGraph` 替代手写 ReAct 循环，解决条件路由复杂度
+- `interrupt()` 实现人机确认（手写需要状态机 + 轮询，框架一行搞定）
+- `Checkpointer` 对比自建 MemoryStore，理解框架设计取舍
 
-先建立评估集、失败分类和回归机制。
+## 明确的”不学”清单
 
-这是从“看起来能用”走向“知道有没有变好”的第一步。
+| 不学                        | 为什么                                                     |
+| --------------------------- | ---------------------------------------------------------- |
+| LangChain 的 Chain 抽象     | 自建的 prompt 链更透明、更可控                             |
+| LangChain 的 Retriever 抽象 | 自建的 BM25 + 混合检索 + RRF 已经更好                      |
+| LangChain 的 Agent 抽象     | 直接学 LangGraph Agent，LangChain 只取其 Tool/Message 基类 |
+| LlamaIndex                  | 和 LangChain 同质，无增量学习价值                          |
+| 多 Agent 编排               | 单 Agent + LangGraph 还没吃透                              |
 
-### 2. Memory
+## 后续四步路径
 
-让 Agent 不只是一次性执行器，而是具备会话状态、任务上下文和长期记忆能力。
+1. **LangGraph 入门**（Week 11）：`StateGraph` 重写 ReAct 循环，对比手写版
+2. **Human-in-the-loop**（Week 12）：`interrupt()` + `Command` + 确认卡片
+3. **安全写操作**（Week 13）：审批式写操作 + diff review + 回滚
+4. **Workflow Integration**（Phase 2D）：`StateGraph` 编排完整研发链路
 
-### 3. Human-in-the-loop
+每一步都保持一个核心对比：**手写版 vs LangGraph 版**，产出判断力沉淀。
 
-把审批、确认、回滚和最小权限加进去，让 Agent 可以真正进入真实工作流。
-
-### 4. Workflow Integration
-
-把 Agent 嵌进研发流程，而不是停留在“回答一个问题”。
-
-## 建议顺序
-
-1. 先学 `Evaluation`
-2. 再学 `Memory`
-3. 再学 `Human-in-the-loop`
-4. 最后学 `Workflow Integration`
-
-## 对应仓库下一步可以怎么落
+## 对应仓库落点
 
 建议新增：
 
-- `projects/05-agent-eval/`
-- `experiments/agent-evals/`
-- `weeks/week-09/` 之后的下一阶段记录
-
-这样仓库会继续保持“成长记录 + 阶段产物”的结构，而不是回到“单项目堆功能”的方向。
+- `projects/06-langgraph-copilot/`（LangGraph 版 Agent）
+- `weeks/week-11/` 起的周记录
+- `experiments/langgraph-vs-handwritten/` 对比实验

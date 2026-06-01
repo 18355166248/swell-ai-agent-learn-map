@@ -16,181 +16,161 @@
 
 ## 2. 你现在已经走到哪一步
 
-前 8 周已经完成的能力可以概括成：
+前 10 周已经完成的能力可以概括成：
 
 - 基础调用：Prompt、LLM API、Streaming、错误处理
 - 知识层：Embedding、Chunk、RAG、引用来源、检索优化
 - 场景层：真实研发文档接入、结构化需求分析
 - 编排层：Tool Calling、ReAct、只读 Agent、多步分析
+- 评估层：评估引擎、关键点覆盖率、工具路径验证、约束检测、回归对比
+- 记忆层：MemoryStore、会话历史注入/保存、conversationId 对接
 
 这意味着你已经完成了：
 
-- 从“调模型”到“做系统”
-- 从“单次回答”到“知识检索”
-- 从“知道什么”到“先查什么”
+- 从”调模型”到”做系统”
+- 从”单次回答”到”知识检索”
+- 从”知道什么”到”先查什么”
+- 从”看起来能用”到”能证明有没有变好”
+- 从”一次性任务”到”有记忆持续协作”
+
+10 周的手写积累给了你一个关键优势：**你已经理解了底层原理**。接下来引入 LangGraph 不会变成”只会用框架”，而是”理解原理后选对工具”。
 
 但你还没有完成的是：
 
-- 怎么评估系统是否变好
-- 怎么让系统记住用户和任务
 - 怎么让系统在真实工作流里可控执行
+- 怎么让系统在不确定时主动确认而不是编造
+- 怎么用合适的框架解决手写状态机的复杂度问题
 - 怎么让系统具备长期可演进性
 
-## 3. 方向池总评估
+## 3. 方向池总评估（更新版）
 
-下面是你提到的所有方向，我按“现在是否适合学”重新整理了一次。
+Evaluation 和 Memory 已完成。以下是剩余方向和新技术选型的评估。
 
-| 方向                            | 现在适合度 | 为什么                                                       |
-| ------------------------------- | ---------- | ------------------------------------------------------------ |
-| Evaluation                      | `高`       | 这是后面所有能力的前置条件，没有它就无法判断系统是否变好     |
-| Retrieval quality 评估          | `高`       | 你已经有 RAG，马上可以评估，收益直接                         |
-| Answer quality 评估             | `高`       | 现在就能做，而且能补齐“看起来能用”和“真的好用”的差别         |
-| Agent task completion 评估      | `高`       | 你已经有 `dev-copilot`，正适合补任务完成评估                 |
-| Regression 记录                 | `高`       | 这是把评估结果转成长期工程机制的关键                         |
-| Tool trace / retrieval hit 分析 | `高`       | 已有基础，补起来成本低，能直接增强可观察性                   |
-| 失败原因分类                    | `高`       | 评估体系的组成部分，适合现在一起做                           |
-| Prompt / version 管理           | `中高`     | 很值得做，但最好建立在评估体系之后                           |
-| 用户任务完成率统计              | `中`       | 值得做，但更适合系统开始长期使用后补                         |
-| Session memory                  | `中高`     | 很重要，但如果先没评估，容易做成“记忆很多但不知道有没有帮助” |
-| Task state persistence          | `中高`     | 和 session memory 一样，建议放在评估之后                     |
-| Workspace context               | `中`       | 有价值，但要先定义清楚记忆边界和上下文粒度                   |
-| User profile                    | `中低`     | 更偏产品层，适合系统开始面向稳定用户后再补                   |
-| 审批式写操作                    | `中`       | 值得学，但前提是评估和边界先稳定                             |
-| 人工确认点                      | `中高`     | 可以较早进入，因为它是 Human-in-the-loop 的基础              |
-| diff review                     | `中高`     | 非常适合未来写操作 Agent，但要晚于评估体系                   |
-| 可回滚 workflow                 | `中`       | 只有进入写操作后才真正有价值                                 |
-| 任务拆分 + 人工接管             | `中高`     | 很适合下一阶段，但最好在 memory 和任务状态之后做             |
-| AI Native workflow integration  | `中高`     | 是正确方向，但不应该现在直接跳过去做大而全版本               |
+### 技术选型：LangGraph
 
-## 4. 建议顺序
+| 维度       | 评估                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------------------------- |
+| 现在适合度 | `高`                                                                                                            |
+| 为什么     | 手写 ReAct + MemoryStore 已充分理解底层原理；进入 Human-in-the-loop 和 Workflow 后，手写状态机会越来越难维护    |
+| 核心收益   | `interrupt()` 解决人机确认、`Checkpointer` 解决状态持久化、`StateGraph` 解决多步编排                            |
+| 风险       | 低——带着 10 周手写经验看框架，不会”只会用不懂原理”。LangGraph 的 Tool/Message 概念和你手写的一致                |
+| 不学什么   | LangChain 的 Chain/Retriever 抽象——你自建的 chunker/embedder/retriever/混合检索更好，LangChain 只取其 Tool 基类 |
 
-### 第一优先级：Evaluation
+### 剩余方向评估
 
-这是你现在最应该学的。
+| 方向                  | 现在适合度 | 为什么                                                  |
+| --------------------- | ---------- | ------------------------------------------------------- |
+| LangGraph 入门        | `最高`     | 当前阶段核心任务，替代手写 ReAct 循环                   |
+| Human-in-the-loop     | `最高`     | LangGraph `interrupt()` 天然支持，Week 12 目标          |
+| Checkpointer 对比     | `高`       | 拿自建 MemoryStore 和 LangGraph Checkpointer 做设计对比 |
+| 审批式写操作          | `高`       | 基于 `interrupt()` 实现，比手写确认逻辑干净得多         |
+| diff review           | `高`       | 结合写操作场景做                                        |
+| 可回滚 workflow       | `中高`     | `StateGraph` 的分支回退比手写状态机清晰                 |
+| 多步研发流程编排      | `中高`     | Phase 2D 目标，`StateGraph` 编排需求分析→方案→审批→文档 |
+| Prompt / version 管理 | `中`       | 有价值但非 LangGraph 阶段重点                           |
+| Workspace context     | `中`       | 可在 Checkpointer 基础上扩展                            |
+| User profile          | `中低`     | 更偏产品层，适合系统面向稳定用户后再补                  |
+| 多 Agent 编排         | `低`       | 过早——先吃透单 Agent + LangGraph，再考虑多 Agent        |
+
+## 4. 当前学习路径（已完成 Evaluation + Memory，进入 LangGraph 阶段）
+
+### 第一优先级：LangGraph 入门 → Human-in-the-loop
+
+这是 Week 11–13 的核心任务。
 
 原因很简单：
 
-- 你已经有了 RAG 和 Agent 原型
-- 现在最缺的不是新能力，而是判断能力
-- 如果没有评估，后面做 Memory、写操作、工作流集成都会变得很虚
+- 10 周手写积累给了你最好的前提——理解底层原理再引入框架
+- 手写 ReAct 循环在条件路由和确认点方面已经力不从心
+- LangGraph 的 `interrupt()` 直接解决你手写确认逻辑的痛点
+- `Checkpointer` 让你可以对比自建 MemoryStore 理解框架设计取舍
 
-这一阶段应该重点回答：
+这一段应该重点回答：
 
-- 怎么设计任务集
-- 怎么做 answer quality 评估
-- 怎么评估 retrieval quality
-- 怎么评估 agent task completion
-- 怎么记录 regression
-- 怎么做 failure taxonomy
-- 怎么做 tool trace / retrieval hit 分析
+- `StateGraph` 如何替代手写 ReAct 循环
+- 框架版本和手写版本在代码复杂度上的差异
+- 什么情况下手写比框架更好（边界判断能力）
+- `interrupt()` + `Command` 的人机协作模式
+- `Checkpointer` vs 自建 MemoryStore 的设计差异
 
-### 第二优先级：Memory
+### 第二优先级：安全写操作
 
-这一阶段建议放在 Evaluation 后。
+基于 LangGraph 的 `interrupt()` 实现审批式写操作。
 
-因为只有先知道当前系统在什么任务上表现好或不好，才知道记忆应该服务什么目标。
+- 审批式写操作（基于 `interrupt()` 卡点）
+- diff review + 回滚策略
+- 最小权限边界设计
+- 评估体系新增写操作约束维度
 
-这一阶段可以重点学：
+### 第三优先级：Workflow Integration
 
-- session memory
-- task state persistence
-- workspace context
-- long-term memory
+用 LangGraph `StateGraph` 编排完整研发链路。
 
-建议先不碰太重的 `user profile`，先把“任务连续性”做好。
+- 需求分析 → 方案草拟 → 人工审批 → 文档生成
+- 对比手写编排和 LangGraph 编排的复杂度
+- 沉淀”什么时候该用框架、什么时候手写更合适”的判断
 
-### 第三优先级：Human-in-the-loop
+### 明确的”不学”清单
 
-这是把 Agent 真正从“分析系统”推进到“协作系统”的关键一步。
-
-这一阶段重点不是“让它自动写更多东西”，而是“让它在可控前提下参与更多工作”。
-
-建议重点学：
-
-- 审批式写操作
-- 人工确认点
-- diff review
-- 可回滚 workflow
-- 任务拆分 + 人工接管
-
-这里的关键判断是：
-
-自动化不是目标，可控协作才是目标。
-
-### 第四优先级：AI Native workflow
-
-这应该是前 3 个阶段之后的结果，而不是现在直接跳进去做的东西。
-
-到这一阶段时，你再去接真实研发流程会更稳：
-
-- 需求分析
-- 方案草拟
-- 文档生成
-- 测试点整理
-- code review 辅助
-
-如果现在直接做这些，很容易变成“看起来覆盖了工作流，实际上底层能力和边界都还没打稳”。
+| 不学                        | 为什么                                                         |
+| --------------------------- | -------------------------------------------------------------- |
+| LangChain 的 Chain 抽象     | 你自建的 prompt 链更透明、更可控                               |
+| LangChain 的 Retriever 抽象 | 你自建的 BM25 + 混合检索 + RRF 已经更好                        |
+| LangChain 的 Agent 抽象     | 直接学 LangGraph 的 Agent，LangChain 只取其 Tool/Message 基类  |
+| 多 Agent 编排               | 单 Agent + LangGraph 还没吃透，过早引入多 Agent 只会增加复杂度 |
+| LlamaIndex                  | 和 LangChain 同质，没有增量学习价值                            |
 
 ## 5. 每个方向具体该学什么
 
-### 5.1 Evaluation
-
-建议拆成 5 个子主题：
-
-1. 任务集设计
-   - 问答类任务
-   - 分析类任务
-   - 代码观察类任务
-   - 边界类任务
-
-2. 评分维度
-   - retrieval hit
-   - citation accuracy
-   - answer quality
-   - task completion
-   - constraint compliance
-
-3. 失败分类
-   - retrieval miss
-   - citation wrong
-   - tool choice wrong
-   - task incomplete
-   - constraint break
-
-4. 回归机制
-   - 改 Prompt 后回归
-   - 改检索策略后回归
-   - 改工具逻辑后回归
-
-5. 可观察性
-   - tool trace
-   - retrieval hit 分析
-   - prompt/version 管理
-
-### 5.2 Memory
+### 5.1 LangGraph 入门（Week 11）
 
 建议拆成 4 个子主题：
 
-1. 会话记忆
-   - 记住上一轮结论
-   - 支持任务继续
+1. 核心概念
+   - StateGraph / Node / Edge / ConditionalEdge
+   - State schema 设计（与手写 messages[] 的对应关系）
+   - ToolNode 与手写 Tool Registry 的对比
 
-2. 任务状态
-   - 当前任务做到哪一步
-   - 哪些子任务已经完成
+2. 重写 ReAct 循环
+   - 用 `StateGraph` 表达手写 while 循环的逻辑
+   - 对比：代码行数、可读性、可测试性
+   - 评估体系跑同一套任务集对比通过率
 
-3. 工作区上下文
-   - 当前项目是什么
-   - 当前文档集是什么
-   - 当前使用的约束是什么
+3. 迁移 Tool 层
+   - 自建工具注册表 → LangChain Tool 封装
+   - 不改工具实现，只换调用接口
 
-4. 长期记忆
-   - 保留用户偏好
-   - 保留常见任务模式
+4. 对比结论沉淀
+   - 什么场景手写更好（简单线性流程）
+   - 什么场景框架更好（条件路由、多步分支）
 
-### 5.3 Human-in-the-loop
+### 5.2 Human-in-the-loop（Week 12）
 
-建议拆成 4 个子主题：
+建议拆成 3 个子主题：
+
+1. 确认点设计
+   - 哪些操作必须暂停确认（写文件、发请求、改配置）
+   - `interrupt()` 的触发时机和粒度
+   - `Command` 恢复执行的模式
+
+2. 前端确认卡片
+   - 非纯文本的确认 UI（diff 预览、影响范围）
+   - SSE 流式确认状态推送
+
+3. 对比自建确认逻辑
+   - 手写版（在 ReAct 里判断 + 轮询等待）vs LangGraph `interrupt()`
+   - 记录两种方案的复杂度差异
+
+### 5.3 Checkpointer 对比（Week 12 附带）
+
+1. LangGraph `MemorySaver` vs 自建 MemoryStore
+2. `SqliteSaver` 的持久化能力
+3. 状态恢复和断点续跑
+4. 对比结论：什么时候自建存储更好
+
+### 5.4 安全写操作（Week 13）
+
+建议拆成 3 个子主题：
 
 1. 审批点设计
    - 什么时候必须确认
@@ -204,91 +184,74 @@
    - 怎么撤销
    - 怎么恢复到上一步
 
-4. 人工接管
-   - Agent 卡住时怎么把任务交回给人
-   - 人继续之后怎么再交还给 Agent
+### 5.5 Workflow Integration（Phase 2D）
 
-### 5.4 Workflow Integration
+建议拆成 2 个子主题：
 
-建议拆成 5 个真实研发子流程：
+1. 单条研发链路编排
+   - 需求分析 → 方案草拟 → 人工审批 → 文档生成
+   - `StateGraph` 的并行节点和条件分支
 
-1. 需求分析
-2. 方案草拟
-3. 文档生成
-4. 测试点整理
-5. code review 辅助
-
-不要一口气做五个，建议一次只做一个。
+2. 框架 vs 手写对比
+   - 同一链路手写版和 LangGraph 版的代码量、可维护性
+   - 最终结论：什么时候该用框架
 
 ## 6. 现在最适合你的具体顺序
 
-如果按你当前基础来排，我建议是：
+已完成前两步（Evaluation + Memory），接下来按 LangGraph 主线推进：
 
-1. `Evaluation`
-2. `Memory`
-3. `Human-in-the-loop`
-4. `Workflow Integration`
+1. `LangGraph 入门`（Week 11）：`StateGraph` 重写 ReAct 循环，对比手写版
+2. `Human-in-the-loop`（Week 12）：`interrupt()` + `Command` + 确认卡片
+3. `安全写操作`（Week 13）：审批式写操作 + diff review + 回滚
+4. `Workflow Integration`（Phase 2D）：`StateGraph` 编排完整研发链路
 
-更细一点可以拆成：
-
-1. 先做 RAG + Agent 评估集
-2. 再做 regression 和 trace
-3. 再做 session memory + task state
-4. 再做审批式写操作和人工确认点
-5. 最后再接一个真实研发流程
+每一步都保持一个核心对比：**手写版 vs LangGraph 版**。这个对比本身就是最有价值的学习产出。
 
 ## 7. 当前不建议优先做的东西
 
 下面这些方向不是没价值，而是现在先做容易跑偏：
 
-- 多 Agent 编排
+- 多 Agent 编排（先吃透单 Agent + LangGraph）
+- LangChain 的 Chain / Retriever / Agent 抽象（你已有更好实现）
+- LlamaIndex（和 LangChain 同质，无增量价值）
 - 复杂 Planner / Executor / Critic 架构
 - 一上来就做全自动写代码
 - 一上来就做通用长期用户画像系统
-- 一上来就做“覆盖整个研发生命周期”的大而全平台
 
-这些方向都有价值，但都应该建立在前面 4 个优先级已经清楚之后。
+这些方向都有价值，但都应该建立在 LangGraph 单 Agent 编排已经吃透之后。
 
-## 8. 未来 2-3 个阶段的建议产物
+## 8. 未来阶段的建议产物
 
-### Phase 2A：Evaluation
-
-建议产物：
-
-- `projects/05-agent-eval/`
-- `experiments/agent-evals/`
-- 一套任务集模板
-- 一套失败分类和回归机制
-
-### Phase 2B：Memory
+### Phase 2C：LangGraph 入门 → Human-in-the-loop（进行中）
 
 建议产物：
 
-- 带会话状态的 Agent 原型
-- 任务恢复能力
-- workspace context 结构设计
-
-### Phase 2C：Human-in-the-loop
-
-建议产物：
-
-- 受控写操作实验
-- diff review / approval flow
-- rollback 机制原型
+- `projects/06-langgraph-copilot/`（LangGraph 版 Agent）
+- 手写版 vs LangGraph 版对比报告（代码量、通过率、可维护性）
+- `interrupt()` 确认卡片前端原型
+- Checkpointer vs 自建 MemoryStore 设计对比
 
 ### Phase 2D：Workflow
 
 建议产物：
 
-- 一个真实研发场景的 AI Native 工作流
-- 一条从输入任务到产出结果的可演示链路
+- 一条基于 LangGraph `StateGraph` 的完整研发链路
+- 从输入需求到产出文档的可演示流程
+- “什么时候该用框架”的判断沉淀
 
 ## 9. 最终建议
 
 如果只用一句话概括：
 
-你现在最不该做的是继续追求“更复杂的 Agent 形态”，最该做的是把 **评估、记忆、协作、工作流** 这四层按顺序补起来。
+你现在最不该做的是继续手写越来越复杂的状态机，或者跳进多 Agent 编排。
 
-其中，**Evaluation 是第一优先级，而且必须先做。**
+你现在最该做的是：**用 10 周积累的底层理解，去学 LangGraph 这个刚好能解决你下一层问题的框架**。
 
-没有 Evaluation，后面的所有增强都很难判断方向到底对不对。
+具体来说：
+
+- LangGraph 的 `StateGraph` 替代手写 ReAct → 解决条件路由复杂度
+- `interrupt()` → 解决人机确认问题（手写需要状态机 + 轮询，框架一行搞定）
+- `Checkpointer` → 对比自建 MemoryStore，理解框架设计取舍
+- 评估体系 → 跑同一套任务集，对比手写版和框架版的通过率
+
+最终目标不是”学会用 LangGraph”，而是建立一个关键判断力：**什么时候手写更好，什么时候该用框架**。这个判断力是区别”会用工具的人”和”AI 系统工程师”的分界线。

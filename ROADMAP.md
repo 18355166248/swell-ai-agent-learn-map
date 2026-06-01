@@ -5,14 +5,34 @@
 
 ## 当前判断
 
-前 8 周已经完成，重点是走完一条从 Prompt 到 RAG，再到 Agent 的最小可运行学习路径。
+前 10 周内容已在 05/21–05/31（实际 11 天）内加速完成，走完了一条从 Prompt 到 RAG、Agent、评估、记忆的最小可运行学习路径。Week 1-2 接近自然周节奏，Week 3-8 在 3 天内高强度压缩完成，Week 9-10 各占 1-2 天。
 
-如果继续往下学，路线不该再简单重复“做一个新工具”，而应该进入第二阶段：
+如果继续往下学，路线不该再简单重复”做一个新工具”，而应该进入第二阶段的后半程——引入合适的框架来解决手写状态机已经力不从心的问题：
 
-- 学评估，而不是只看 demo 效果
-- 学记忆，而不是只做一次性任务
-- 学人机协作，而不是直接追求全自动
-- 学工作流集成，而不是继续堆孤立能力
+- 学 LangGraph 的 StateGraph 编排，而不是继续手写 if/else 状态机
+- 学 `interrupt()` 人机确认，而不是在 ReAct 循环里硬塞确认逻辑
+- 学 Checkpointer 持久化，对比自建 MemoryStore 理解框架设计的取舍
+- 学 Graph 工作流集成，把 Agent 从”回答问题”推进到”参与研发流程”
+
+## 为什么选 LangGraph
+
+经过 10 周手写积累，当前项目已经具备：
+
+- 手写 ReAct 循环（理解 Agent 消息流转）
+- 手写 MemoryStore（理解会话持久化本质）
+- 手写 Tool Registry（理解工具边界与安全）
+- 手写评估体系（理解”变好”的判定标准）
+
+这些底层理解是引入 LangGraph 的最佳前提——不会”只会用框架但不懂原理”。
+
+LangGraph 的四个核心能力直接对应后续需求：
+
+| LangGraph 能力   | 对应项目需求                              |
+| ---------------- | ----------------------------------------- |
+| `StateGraph`     | 替代手写 ReAct 循环，支持更复杂的条件路由 |
+| `interrupt()`    | Human-in-the-loop 确认点（Week 12 目标）  |
+| `Checkpointer`   | 替代自建 MemoryStore，支持长对话持久化    |
+| `Command` / 分支 | Phase 2D 工作流编排                       |
 
 ## 里程碑总览
 
@@ -23,14 +43,16 @@ Week 5-6  ████  RAG 优化 + 接入真实场景            → 产出：
 Week 7-8  ████  Agent + 整合收尾                   → 能力：Tool Calling、ReAct、多步分析
 ```
 
-## 第二阶段里程碑总览（建议）
+## 第二阶段里程碑总览
 
 ```text
-Phase 2A  ████  Evaluation / 评估体系             → 产出：任务集 + 回归评估
-Phase 2B  ████  Memory / 会话状态                 → 产出：带记忆的 Agent 原型
-Phase 2C  ████  Human-in-the-loop / 审批流        → 产出：可控写操作工作流
-Phase 2D  ████  Workflow / 研发流程集成           → 产出：AI Native 工作流助手
+Phase 2A  ████  Evaluation / 评估体系             → 产出：任务集 + 回归评估           ✅ Week 9
+Phase 2B  ████  Memory / 会话状态                 → 产出：带记忆的 Agent 原型         ✅ Week 10
+Phase 2C  ████  LangGraph → Human-in-the-loop       → 产出：可控人机协作工作流            🟡 Week 11–13
+Phase 2D  ████  Workflow / 研发流程集成           → 产出：AI Native 工作流助手        ⬜
 ```
+
+> Phase 2C 起引入 **LangGraph** 作为核心编排框架。理由：手写 ReAct 循环 + MemoryStore 在 Phase 2A/2B 已充分理解底层原理，进入人机协作和工作流编排后，LangGraph 的 `interrupt()` / `Checkpointer` / `StateGraph` 能直接解决手写状态机的复杂度问题。
 
 ---
 
@@ -339,71 +361,90 @@ Agent 工具集（第一版只做只读工具，不要直接改代码）：
 
 ---
 
-## 下一阶段建议：Phase 2A（Evaluation）
+## Phase 2A（Evaluation）✅ 已完成 · Week 9
 
-**核心问题**：怎么证明 RAG / Agent 真的变好了，而不是“看起来能用”？
+**核心问题**：怎么证明 RAG / Agent 真的变好了，而不是”看起来能用”？
 
-### 学习目标
+> 详细记录见 `weeks/week-09/notes.md` 和 `PROGRESS.md`
 
-- [ ] 建立 RAG 检索评估任务集
-- [ ] 建立 Agent 任务完成评估任务集
-- [ ] 学会定义成功标准、失败类型和回归检查
-- [ ] 让“测试全绿”和“效果真的更好”变成两套独立信号
+主要交付：
 
-### 实践任务
-
-**项目建议**：`projects/05-agent-eval/`
-
-功能目标：
-
-- 管理一组固定问题 / 任务集
-- 跑一次检索或 Agent 分析
-- 记录答案、引用来源、工具调用轨迹
-- 输出通过率 / 失败类型 / 版本对比
-
-### 为什么先学这个
-
-- 没有评估，后面做记忆和写操作会越来越不可控
-- 你已经有 RAG 和 Agent 原型，最缺的是“怎么持续判断它们变没变好”
-- 这是从 demo 思维走向 AI Native 系统思维的第一步
+- `projects/05-agent-eval/` 评估引擎（schema + runner + CLI）
+- 关键点覆盖率引擎 / 工具路径验证 / 约束检测 / 回归对比
+- 7 轮 Agent 评估迭代（round 1: 60% → round 4: 100% → round 7: 80%）
 
 ---
 
-## 再下一步建议：Phase 2B（Memory）
+## Phase 2B（Memory）✅ 已完成 · Week 10
 
 **核心问题**：怎么让 Agent 不只是一次性任务执行器，而是能持续记住上下文？
 
-### 学习目标
+> 详细记录见 `weeks/week-10/notes.md` 和 `PROGRESS.md`
 
-- [ ] 理解 short-term memory / long-term memory 的差别
-- [ ] 学习会话摘要和任务状态持久化
-- [ ] 设计用户上下文、项目上下文、任务上下文的分层
-- [ ] 评估“记住”和“记错”的边界
+主要交付：
 
-### 实践任务
-
-在现有 `dev-copilot` 基础上做一版带会话状态的实验原型：
-
-- 记住上一轮任务结论
-- 支持任务继续而不是每次重来
-- 显式展示“系统记住了什么”
+- MemoryStore（文件 JSON 存储 + CRUD + 历史格式化）
+- runAgent 自动注入/保存对话历史
+- Server / CLI 两端 conversationId 对接
+- 277 测试全量通过
 
 ---
 
-## 之后的方向：Phase 2C / 2D
+## 当前阶段：Phase 2C — LangGraph 入门（Human-in-the-loop 技术铺垫）🟡 进行中
 
-### Phase 2C：Human-in-the-loop
+**核心问题**：怎么用 LangGraph `StateGraph` 替代手写 ReAct 循环，为 Week 12 的人机确认流打基础？
 
-- 审批式写操作
-- diff review
-- 回滚和最小权限
-- 用户确认点设计
+### LangGraph 学习路径
 
-### Phase 2D：Workflow Integration
+```text
+Week 11: LangGraph 基础
+  → StateGraph / Node / Edge / ConditionalEdge
+  → 用 LangGraph 重写 dev-copilot 的 ReAct 循环
+  → 对比手写版和 LangGraph 版的差异
 
-- 把 Agent 嵌进真实研发流程
-- 做需求分析、方案草拟、文档生成、测试点整理等连续任务
-- 让系统不只回答问题，而是真正参与工作流
+Week 12: Human-in-the-loop
+  → interrupt() 确认点设计
+  → Command 恢复执行
+  → Checkpointer 对比自建 MemoryStore
+  → 前端确认卡片 UI
+
+Week 13: 安全写操作
+  → 审批式写操作
+  → diff review + 回滚
+  → 评估体系新增约束维度
+```
+
+### 实践任务
+
+**项目**：`projects/06-langgraph-copilot/`（新建）
+
+```bash
+# 用 LangGraph 重写的 Agent，带确认流
+langgraph-copilot “帮我新增一个埋点” --confirm
+```
+
+核心对比点：
+
+- `StateGraph` vs 手写 ReAct 循环的复杂度差异
+- `interrupt()` vs 在 ReAct 里硬塞确认逻辑的差异
+- `Checkpointer` vs 自建 MemoryStore 的设计取舍
+- 评估体系跑同一套任务集，对比手写版和 LangGraph 版的通过率
+
+---
+
+## Phase 2D（Workflow Integration）⬜
+
+**核心问题**：怎么把 Agent 嵌进真实研发流程？
+
+用 LangGraph `StateGraph` 编排一条完整研发链路：
+
+```text
+需求输入 → 分析(节点1) → 方案草拟(节点2)
+  → interrupt(人工审批)
+  → 文档生成(节点3) → 测试点整理(节点4)
+```
+
+对比手写编排和 LangGraph 编排的差异，沉淀”什么时候该用框架”的判断。
 
 ---
 
