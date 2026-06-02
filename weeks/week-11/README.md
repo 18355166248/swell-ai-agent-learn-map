@@ -324,7 +324,7 @@ const addTool = new DynamicStructuredTool({
   func: async ({ a, b }) => String(a + b), // 这段先不跑
 });
 
-const llm = new ChatOpenAI({ model: "gpt-4o" }).bindTools([addTool]);
+const llm = new ChatOpenAI({ model: process.env.MODEL_NAME || "gpt-4o" }).bindTools([addTool]);
 
 // 问一个计算问题——LLM 应该决定调工具而不是直接回答
 const response = await llm.invoke([{ role: "user", content: "3 + 5 等于多少？" }]);
@@ -334,7 +334,7 @@ console.log("tool_calls:", response.tool_calls); // [{ name: "add", args: { a: 3
 console.log("是 AIMessage:", response.constructor.name); // AIMessage
 ```
 
-> 🧪 **小实验**：问"法国首都是什么？"（不需要工具）。对比两次返回：一个含 `tool_calls`，一个只有 `content`。这就是你手写 `index.ts` 第 332 行 `if (msg.tool_calls)` 判断的依据。
+> 🧪 **小实验**：问"法国首都是什么？"（不需要工具）。对比两次返回：一个含 `tool_calls`，一个只有 `content`。这就是你手写 `index.ts` 第 326/343 行 `if (msg.tool_calls?.length)` 判断的依据。
 
 ### 步骤 5-2：对照手写版的工具定义
 
@@ -493,7 +493,7 @@ const graph = new StateGraph(CounterState)
 
 // 运行：count 从 0 开始 → increment → print → ... 直到 count >= 5 时结束
 const result = await graph.invoke({ count: 0 }, { recursionLimit: 20 });
-// 输出：1, 2, 3, 4, 5  → result.count === 5
+// 输出：1, 2, 3, 4（count 增到 5 时 decideNext 直接走 done，没轮到 print）→ result.count === 5
 ```
 
 > 🧪 **小实验**：把 `recursionLimit` 从 20 改成 3。观察 `GraphRecursionError` 被抛出——这就是你手写版 `maxIterations` 的作用。
@@ -529,7 +529,10 @@ function shouldContinue(state: typeof MessagesAnnotation.State) {
 - [ ] 创建 `projects/06-langgraph-copilot/src/segment-07/step-03-react-graph.ts`
 
 ```typescript
-const llm = new ChatOpenAI({ model: "gpt-4o", temperature: 0.3 }).bindTools(tools);
+const llm = new ChatOpenAI({
+  model: process.env.MODEL_NAME || "gpt-4o",
+  temperature: 0.3,
+}).bindTools(tools);
 const toolNode = new ToolNode(tools);
 
 const graph = new StateGraph(MessagesAnnotation)
@@ -602,7 +605,10 @@ for await (const chunk of await graph.stream(input, { streamMode: "updates" })) 
 }
 
 // messages 模式：token 级流式
-const llm = new ChatOpenAI({ model: "gpt-4o", streaming: true }).bindTools(tools);
+const llm = new ChatOpenAI({
+  model: process.env.MODEL_NAME || "gpt-4o",
+  streaming: true,
+}).bindTools(tools);
 for await (const [msg, metadata] of await graph.stream(input, { streamMode: "messages" })) {
   // msg 是 AIMessageChunk，逐 token 到达
 }
@@ -623,7 +629,7 @@ for await (const [msg, metadata] of await graph.stream(input, { streamMode: "mes
 - [ ] 创建 `projects/06-langgraph-copilot/src/segment-08/step-memory-01-basics.ts`
 
 ```typescript
-import { MemorySaver } from "@langchain/langgraph-checkpoint";
+import { MemorySaver } from "@langchain/langgraph";
 
 // MemorySaver 是一个 checkpointer：它为每个 thread_id 保存 graph state
 const checkpointer = new MemorySaver();
