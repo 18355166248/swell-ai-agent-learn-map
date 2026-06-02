@@ -35,7 +35,7 @@ AI 代码解释器 — 分析前端代码文件，输出结构化 JSON 分析结
 环境变量:
   ANTHROPIC_API_KEY  Anthropic API 密钥（或 OPENAI_API_KEY）
   ANTHROPIC_BASE_URL 可选。Anthropic 兼容网关地址
-  MODEL_NAME         可选。模型名称
+  ANTHROPIC_MODEL_NAME         可选。模型名称
 `);
     process.exit(0);
   }

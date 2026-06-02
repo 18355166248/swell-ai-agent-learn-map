@@ -255,7 +255,7 @@ import { StateGraph, START, END, MessagesAnnotation } from "@langchain/langgraph
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 
-const llm = new ChatOpenAI({ model: process.env.MODEL_NAME || "gpt-4o" });
+const llm = new ChatOpenAI({ model: process.env.OPENAI_MODEL_NAME || "gpt-4o" });
 
 const graph = new StateGraph(MessagesAnnotation)
   .addNode("askLLM", async (state) => {
@@ -324,7 +324,9 @@ const addTool = new DynamicStructuredTool({
   func: async ({ a, b }) => String(a + b), // 这段先不跑
 });
 
-const llm = new ChatOpenAI({ model: process.env.MODEL_NAME || "gpt-4o" }).bindTools([addTool]);
+const llm = new ChatOpenAI({ model: process.env.OPENAI_MODEL_NAME || "gpt-4o" }).bindTools([
+  addTool,
+]);
 
 // 问一个计算问题——LLM 应该决定调工具而不是直接回答
 const response = await llm.invoke([{ role: "user", content: "3 + 5 等于多少？" }]);
@@ -530,7 +532,7 @@ function shouldContinue(state: typeof MessagesAnnotation.State) {
 
 ```typescript
 const llm = new ChatOpenAI({
-  model: process.env.MODEL_NAME || "gpt-4o",
+  model: process.env.OPENAI_MODEL_NAME || "gpt-4o",
   temperature: 0.3,
 }).bindTools(tools);
 const toolNode = new ToolNode(tools);
@@ -606,7 +608,7 @@ for await (const chunk of await graph.stream(input, { streamMode: "updates" })) 
 
 // messages 模式：token 级流式
 const llm = new ChatOpenAI({
-  model: process.env.MODEL_NAME || "gpt-4o",
+  model: process.env.OPENAI_MODEL_NAME || "gpt-4o",
   streaming: true,
 }).bindTools(tools);
 for await (const [msg, metadata] of await graph.stream(input, { streamMode: "messages" })) {

@@ -67,7 +67,7 @@ export async function analyzeContent(
   }
 
   const client = getClient();
-  const modelName = process.env.MODEL_NAME || "openai/gpt-oss-120b:free";
+  const modelName = process.env.OPENAI_MODEL_NAME || "openai/gpt-oss-120b:free";
   const outputLanguage = resolveOutputLanguage(question);
 
   const buildUserPromptWithBudget = (content: string, forceNonEmptySummary = false) => {
@@ -266,7 +266,7 @@ export async function summarizeDirectory(
   question?: string,
 ): Promise<string> {
   const client = getClient();
-  const modelName = process.env.MODEL_NAME || "openai/gpt-oss-120b:free";
+  const modelName = process.env.OPENAI_MODEL_NAME || "openai/gpt-oss-120b:free";
   const outputLanguage = resolveOutputLanguage(question);
   const summarySystemPrompt =
     outputLanguage === "en"

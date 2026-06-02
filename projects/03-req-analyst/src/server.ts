@@ -24,7 +24,7 @@ app.post("/api/analyze", async (req, res) => {
     }
 
     console.log(
-      `[ReqAnalyst] requirement="${requirement.trim().slice(0, 80)}" | model=${process.env.MODEL_NAME || "(未配置)"}`,
+      `[ReqAnalyst] requirement="${requirement.trim().slice(0, 80)}" | model=${process.env.ANTHROPIC_MODEL_NAME || "(未配置)"}`,
     );
 
     try {
@@ -71,5 +71,5 @@ app.get("/api/health", (_req, res) => {
 
 app.listen(PORT, () => {
   console.log(`需求分析服务已启动: http://localhost:${PORT}`);
-  console.log(`生成模型: ${process.env.MODEL_NAME || "(未配置)"}`);
+  console.log(`生成模型: ${process.env.ANTHROPIC_MODEL_NAME || "(未配置)"}`);
 });

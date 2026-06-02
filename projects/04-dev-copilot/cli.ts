@@ -20,7 +20,7 @@ for (let i = 0; i < args.length; i++) {
     console.log(`用法: tsx cli.ts [选项] <任务描述>
 
 选项:
-  --model, -m <name>              指定模型 (默认读取 .env 中的 MODEL_NAME)
+  --model, -m <name>              指定模型 (默认读取 .env 中的 ANTHROPIC_MODEL_NAME)
   --max-iterations, -n <n>        最大迭代次数 (默认: 10)
   --conversation-id, -c <id>      继续已有会话（不传则创建新会话）
   --help, -h                      显示帮助
@@ -49,9 +49,9 @@ if (!process.env.ANTHROPIC_API_KEY) {
   process.exit(1);
 }
 
-if (!model && !process.env.MODEL_NAME) {
-  console.error("错误: 未设置 MODEL_NAME 环境变量");
-  console.error("请在 .env 文件中配置 MODEL_NAME，或通过 --model 显式传入");
+if (!model && !process.env.ANTHROPIC_MODEL_NAME) {
+  console.error("错误: 未设置 ANTHROPIC_MODEL_NAME 环境变量");
+  console.error("请在 .env 文件中配置 ANTHROPIC_MODEL_NAME，或通过 --model 显式传入");
   process.exit(1);
 }
 
@@ -83,7 +83,7 @@ function formatEvent(event: AgentStreamEvent) {
 }
 
 console.log(`📋 任务: ${task}`);
-console.log(`🔧 模型: ${model || process.env.MODEL_NAME}`);
+console.log(`🔧 模型: ${model || process.env.ANTHROPIC_MODEL_NAME}`);
 console.log(`⏳ 最大迭代: ${maxIterations}`);
 console.log("─".repeat(60));
 

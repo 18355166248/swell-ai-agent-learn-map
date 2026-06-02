@@ -27,7 +27,7 @@ import { SYSTEM_PROMPT } from "../../04-dev-copilot/src/agent/prompts.js";
 // ============================================================
 // 配置
 // ============================================================
-const MODEL_NAME = process.env.MODEL_NAME || "claude-sonnet-4-6";
+const ANTHROPIC_MODEL_NAME = process.env.ANTHROPIC_MODEL_NAME || "claude-sonnet-4-6";
 export const DEFAULT_RECURSION_LIMIT = 13;
 
 // ============================================================
@@ -37,7 +37,7 @@ export const DEFAULT_RECURSION_LIMIT = 13;
 const baseURL = (process.env.ANTHROPIC_BASE_URL || "").replace(/\/v1\/?$/, "");
 
 const llm = new ChatAnthropic({
-  model: MODEL_NAME,
+  model: ANTHROPIC_MODEL_NAME,
   temperature: 0.3,
   clientOptions: { baseURL },
 }).bindTools(allTools);

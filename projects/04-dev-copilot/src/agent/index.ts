@@ -93,9 +93,9 @@ function normalizeToolArgsForTask(
 }
 
 function resolveModelName(explicitModel?: string): string {
-  const model = explicitModel || process.env.MODEL_NAME;
+  const model = explicitModel || process.env.ANTHROPIC_MODEL_NAME;
   if (!model) {
-    throw new Error("未设置模型，请通过参数传入，或在 .env 中配置 MODEL_NAME");
+    throw new Error("未设置模型，请通过参数传入，或在 .env 中配置 ANTHROPIC_MODEL_NAME");
   }
   return model;
 }

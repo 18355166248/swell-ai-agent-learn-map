@@ -27,9 +27,9 @@ function parseRound(rawRound: string | undefined): number {
 }
 
 function resolveModelName(explicitModel: string | undefined, env: NodeJS.ProcessEnv): string {
-  const model = explicitModel ?? env.MODEL_NAME;
+  const model = explicitModel ?? env.ANTHROPIC_MODEL_NAME;
   if (!model) {
-    throw new Error("缺少模型配置，请通过 --model 传入，或在 .env 中设置 MODEL_NAME");
+    throw new Error("缺少模型配置，请通过 --model 传入，或在 .env 中设置 ANTHROPIC_MODEL_NAME");
   }
   return model;
 }

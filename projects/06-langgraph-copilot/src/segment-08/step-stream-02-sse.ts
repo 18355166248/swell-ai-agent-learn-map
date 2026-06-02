@@ -9,13 +9,20 @@
  * 然后访问：http://localhost:8084/api/agent/stream?task=你好
  */
 
-import "dotenv/config";
+import { config } from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+// 统一从仓库根 .env 读取（与生产代码一致）
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, "..", "..", "..", "..", ".env"), override: true });
+config({ path: resolve(__dirname, "..", "..", ".env"), override: true });
 import express from "express";
 import { StateGraph, START, END, MessagesAnnotation } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage } from "@langchain/core/messages";
 
-const modelName = process.env.MODEL_NAME || "gpt-4o";
+const modelName = process.env.OPENAI_MODEL_NAME || "gpt-4o";
 
 // 简化的单轮对话图
 const llm = new ChatOpenAI({ model: modelName, streaming: true });

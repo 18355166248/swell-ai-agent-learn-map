@@ -94,7 +94,7 @@ npm run eval:all -- --round=2
 npm run eval:all -- --model=claude-3-5-sonnet
 npm run eval:all -- --round=2 --model=claude-3-5-sonnet
 # 或环境变量
-MODEL_NAME=claude-3-5-sonnet npm run eval:all
+ANTHROPIC_MODEL_NAME=claude-3-5-sonnet npm run eval:all
 ```
 
 结果输出到 `reports/round-{n}-{type}.json`。
@@ -109,7 +109,7 @@ MODEL_NAME=claude-3-5-sonnet npm run eval:all
 说明：
 
 - 评估 CLI 不再内置默认模型
-- 必须通过 `--model=...` 或 `.env` 中的 `MODEL_NAME=...` 指定模型
+- 必须通过 `--model=...` 或 `.env` 中的 `ANTHROPIC_MODEL_NAME=...` 指定模型
 
 如果存在上一轮同类型报告，例如当前运行 `--round=2` 且目录里已有 `round-1-rag.json`，报告中的 `regression` 字段会自动给出：
 

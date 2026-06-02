@@ -136,7 +136,7 @@ app.post("/api/ask", async (req, res) => {
     }
 
     console.log(
-      `[RAG] question="${question.trim().slice(0, 80)}" | model=${process.env.MODEL_NAME || "(未配置)"} | rewrite=${!!rewrite} | hybrid=${!!hybrid}`,
+      `[RAG] question="${question.trim().slice(0, 80)}" | model=${process.env.ANTHROPIC_MODEL_NAME || "(未配置)"} | rewrite=${!!rewrite} | hybrid=${!!hybrid}`,
     );
 
     const result = await askWithRag(question.trim(), vectors, {
@@ -228,6 +228,6 @@ app.get("/api/status", (_req, res) => {
 app.listen(PORT, () => {
   console.log(`RAG 服务已启动: http://localhost:${PORT}`);
   console.log(`知识库目录: ${KB_DIR}`);
-  console.log(`生成模型: ${process.env.MODEL_NAME || "(未配置)"}`);
+  console.log(`生成模型: ${process.env.ANTHROPIC_MODEL_NAME || "(未配置)"}`);
   console.log(`Embedding 模型: ${process.env.EMBEDDING_MODEL || DEFAULT_EMBEDDING_MODEL}`);
 });

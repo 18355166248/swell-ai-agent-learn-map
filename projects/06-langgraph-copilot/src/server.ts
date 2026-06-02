@@ -158,7 +158,7 @@ app.get("/api/health", (_req, res) => {
 // ============================================================
 app.listen(PORT, () => {
   console.log(`LangGraph Copilot 服务已启动: http://localhost:${PORT}`);
-  console.log(`模型: ${process.env.MODEL_NAME || "claude-sonnet-4-6"}`);
+  console.log(`模型: ${process.env.ANTHROPIC_MODEL_NAME || "claude-sonnet-4-6"}`);
   console.log(`端点:`);
   console.log(`  POST /api/agent          — 非流式`);
   console.log(`  GET  /api/agent/stream    — SSE 流式`);

@@ -19,7 +19,14 @@
  * 运行：npx tsx src/segment-06/step-02-tool-node-in-graph.ts
  */
 
-import "dotenv/config";
+import { config } from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+
+// 统一从仓库根 .env 读取（与生产代码一致）
+const __dirname = dirname(fileURLToPath(import.meta.url));
+config({ path: resolve(__dirname, "..", "..", "..", "..", ".env"), override: true });
+config({ path: resolve(__dirname, "..", "..", ".env"), override: true });
 import { StateGraph, START, END, MessagesAnnotation } from "@langchain/langgraph";
 import { ToolNode } from "@langchain/langgraph/prebuilt";
 import { ChatOpenAI } from "@langchain/openai";
@@ -44,7 +51,7 @@ const multiplyTool = new DynamicStructuredTool({
 const tools = [addTool, multiplyTool];
 const toolNode = new ToolNode(tools);
 
-const modelName = process.env.MODEL_NAME || "gpt-4o";
+const modelName = process.env.OPENAI_MODEL_NAME || "gpt-4o";
 const llm = new ChatOpenAI({ model: modelName }).bindTools(tools);
 
 const graph = new StateGraph(MessagesAnnotation)

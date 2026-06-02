@@ -19,7 +19,7 @@ export function isSupportedOpenAIModel(modelName?: string): boolean {
 
 /**
  * 解析 OpenAI CLI 最终使用的模型。
- * 这里显式隔离 Anthropic CLI 的 MODEL_NAME，避免根 .env 里的内部模型串台到 OpenRouter 请求。
+ * 这里显式隔离 Anthropic CLI 的 ANTHROPIC_MODEL_NAME，避免根 .env 里的内部模型串台到 OpenRouter 请求。
  */
 export function resolveOpenAIModel(modelName?: string): {
   modelName: string;

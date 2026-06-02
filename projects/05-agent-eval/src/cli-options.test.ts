@@ -3,7 +3,7 @@ import { parseCliOptions } from "./cli-options.js";
 
 describe("parseCliOptions", () => {
   it("defaults to round 1 and all type", () => {
-    expect(parseCliOptions([], { MODEL_NAME: "claude-3-5-sonnet" })).toEqual({
+    expect(parseCliOptions([], { ANTHROPIC_MODEL_NAME: "claude-3-5-sonnet" })).toEqual({
       type: "all",
       round: 1,
       model: "claude-3-5-sonnet",
@@ -18,7 +18,7 @@ describe("parseCliOptions", () => {
   it("parses explicit eval type, round, and model", () => {
     expect(
       parseCliOptions(["agent", "--round=2", "--model=openai/gpt-4o"], {
-        MODEL_NAME: "openai/ignored",
+        ANTHROPIC_MODEL_NAME: "openai/ignored",
       }),
     ).toEqual({
       type: "agent",
@@ -32,8 +32,10 @@ describe("parseCliOptions", () => {
     });
   });
 
-  it("falls back to MODEL_NAME when --model is absent", () => {
-    expect(parseCliOptions(["rag", "--round=3"], { MODEL_NAME: "openai/gpt-4.1" })).toEqual({
+  it("falls back to ANTHROPIC_MODEL_NAME when --model is absent", () => {
+    expect(
+      parseCliOptions(["rag", "--round=3"], { ANTHROPIC_MODEL_NAME: "openai/gpt-4.1" }),
+    ).toEqual({
       type: "rag",
       round: 3,
       model: "openai/gpt-4.1",
@@ -54,9 +56,9 @@ describe("parseCliOptions", () => {
     );
   });
 
-  it("requires MODEL_NAME when --model is absent", () => {
+  it("requires ANTHROPIC_MODEL_NAME when --model is absent", () => {
     expect(() => parseCliOptions(["all"], {})).toThrow(
-      "缺少模型配置，请通过 --model 传入，或在 .env 中设置 MODEL_NAME",
+      "缺少模型配置，请通过 --model 传入，或在 .env 中设置 ANTHROPIC_MODEL_NAME",
     );
   });
 });

@@ -23,7 +23,7 @@ async function main() {
       `用法: npx tsx src/cli.ts [rag|agent|req-analyst|all] [--round=<n>] [--model=<name>]`,
     );
     console.error(`  --round=<n>     指定评估轮次，默认 1`);
-    console.error(`  --model=<name>  覆盖默认模型（也可通过环境变量 MODEL_NAME 设置）`);
+    console.error(`  --model=<name>  覆盖默认模型（也可通过环境变量 ANTHROPIC_MODEL_NAME 设置）`);
     process.exit(1);
   }
 
@@ -60,7 +60,7 @@ async function main() {
       `用法: npx tsx src/cli.ts [rag|agent|req-analyst|all] [--round=<n>] [--model=<name>]`,
     );
     console.error(`  --round=<n>     指定评估轮次，默认 1`);
-    console.error(`  --model=<name>  覆盖默认模型（也可通过环境变量 MODEL_NAME 设置）`);
+    console.error(`  --model=<name>  覆盖默认模型（也可通过环境变量 ANTHROPIC_MODEL_NAME 设置）`);
     console.error(`无效类型: ${type}`);
     process.exit(1);
   }

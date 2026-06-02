@@ -38,14 +38,14 @@ AI 代码解释器 (OpenAI SDK / OpenRouter 免费模型)
   npx tsx cli-openai.ts examples/sample.tsx --stream
 
 选项:
-  --model, -m    指定模型（默认 ${resolveOpenAIModel(process.env.MODEL_NAME).modelName}）
+  --model, -m    指定模型（默认 ${resolveOpenAIModel(process.env.OPENAI_MODEL_NAME).modelName}）
   --stream, -s   在 stderr 实时打印模型输出
   --list-models  列出可用的免费模型
 
 环境变量 (.env.openai):
   OPENAI_API_KEY    OpenRouter API Key
   OPENAI_BASE_URL   OpenRouter API 地址（可选，默认 https://openrouter.ai/api/v1）
-  MODEL_NAME        默认模型
+  OPENAI_MODEL_NAME        默认模型
 
 当前可用免费模型:
 ${OPENAI_FREE_MODELS.map((m) => `  - ${m}`).join("\n")}
@@ -72,9 +72,9 @@ ${OPENAI_FREE_MODELS.map((m) => `  - ${m}`).join("\n")}
   // 解析 --model / -m 参数，覆盖环境变量中的模型名
   const modelIdx = args.findIndex((a) => a === "--model" || a === "-m");
   const requestedModel =
-    modelIdx !== -1 && args[modelIdx + 1] ? args[modelIdx + 1] : process.env.MODEL_NAME;
+    modelIdx !== -1 && args[modelIdx + 1] ? args[modelIdx + 1] : process.env.OPENAI_MODEL_NAME;
   const resolvedModel = resolveOpenAIModel(requestedModel);
-  process.env.MODEL_NAME = resolvedModel.modelName;
+  process.env.OPENAI_MODEL_NAME = resolvedModel.modelName;
   if (resolvedModel.warning) {
     console.error(`[模型回退] ${resolvedModel.warning}\n`);
   }
@@ -99,7 +99,7 @@ ${OPENAI_FREE_MODELS.map((m) => `  - ${m}`).join("\n")}
     return true;
   });
 
-  console.error(`模型: ${process.env.MODEL_NAME || DEFAULT_OPENAI_MODEL}\n`);
+  console.error(`模型: ${process.env.OPENAI_MODEL_NAME || DEFAULT_OPENAI_MODEL}\n`);
   if (shouldStream) {
     console.error("Streaming: 已开启，增量输出将打印到 stderr\n");
   }

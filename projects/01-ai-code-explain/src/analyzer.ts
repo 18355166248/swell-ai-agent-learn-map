@@ -40,7 +40,7 @@ export async function analyzeContent(
   }
 
   const client = getClient();
-  const modelName = process.env.MODEL_NAME || "official-deepseek-v4-pro";
+  const modelName = process.env.ANTHROPIC_MODEL_NAME || "official-deepseek-v4-pro";
   const outputLanguage = resolveOutputLanguage(question);
   const buildUserPromptWithBudget = (content: string, forceNonEmptySummary = false) => {
     const basePrompt = buildUserPrompt({
@@ -207,7 +207,7 @@ export async function summarizeDirectory(
   question?: string,
 ): Promise<string> {
   const client = getClient();
-  const modelName = process.env.MODEL_NAME || "official-deepseek-v4-pro";
+  const modelName = process.env.ANTHROPIC_MODEL_NAME || "official-deepseek-v4-pro";
   const outputLanguage = resolveOutputLanguage(question);
   const summarySystemPrompt =
     outputLanguage === "en"

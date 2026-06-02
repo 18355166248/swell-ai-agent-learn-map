@@ -10,9 +10,9 @@ config({ path: resolve(__dirname, "..", ".env"), override: false });
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
 
 function resolveModelName(explicitModel?: string): string {
-  const model = explicitModel || process.env.MODEL_NAME;
+  const model = explicitModel || process.env.ANTHROPIC_MODEL_NAME;
   if (!model) {
-    throw new Error("未设置 MODEL_NAME 环境变量");
+    throw new Error("未设置 ANTHROPIC_MODEL_NAME 环境变量");
   }
   return model;
 }

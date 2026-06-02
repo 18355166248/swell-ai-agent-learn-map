@@ -27,7 +27,7 @@ app.post("/api/agent", async (req, res) => {
     }
 
     console.log(
-      `[DevCopilot] task="${task.trim().slice(0, 80)}" | conv=${conversationId || "(新会话)"} | model=${process.env.MODEL_NAME || "(未配置)"}`,
+      `[DevCopilot] task="${task.trim().slice(0, 80)}" | conv=${conversationId || "(新会话)"} | model=${process.env.ANTHROPIC_MODEL_NAME || "(未配置)"}`,
     );
 
     // 兜底超时：6 分钟内必须完成
@@ -58,7 +58,7 @@ app.get("/api/agent/stream", async (req, res) => {
   }
 
   console.log(
-    `[DevCopilot/stream] task="${task.slice(0, 80)}" | conv=${conversationId || "(新会话)"} | model=${process.env.MODEL_NAME || "(未配置)"}`,
+    `[DevCopilot/stream] task="${task.slice(0, 80)}" | conv=${conversationId || "(新会话)"} | model=${process.env.ANTHROPIC_MODEL_NAME || "(未配置)"}`,
   );
 
   res.writeHead(200, {
@@ -149,5 +149,5 @@ app.delete("/api/conversations/:id", (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Dev Copilot 服务已启动: http://localhost:${PORT}`);
-  console.log(`生成模型: ${process.env.MODEL_NAME || "(未配置)"}`);
+  console.log(`生成模型: ${process.env.ANTHROPIC_MODEL_NAME || "(未配置)"}`);
 });

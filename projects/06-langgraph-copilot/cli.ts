@@ -68,7 +68,7 @@ const input = {
 
 if (streamMode) {
   console.log(`\n🤖 任务: ${task}`);
-  console.log(`模型: ${process.env.MODEL_NAME || "claude-sonnet-4-6"}`);
+  console.log(`模型: ${process.env.ANTHROPIC_MODEL_NAME || "claude-sonnet-4-6"}`);
   if (threadId) console.log(`会话: ${threadId}`);
   console.log("=".repeat(50));
 
@@ -100,7 +100,7 @@ if (streamMode) {
   }
 } else {
   console.log(`\n🤖 任务: ${task}`);
-  console.log(`模型: ${process.env.MODEL_NAME || "claude-sonnet-4-6"}`);
+  console.log(`模型: ${process.env.ANTHROPIC_MODEL_NAME || "claude-sonnet-4-6"}`);
   if (threadId) console.log(`会话: ${threadId}`);
   console.log("=".repeat(50));
 
