@@ -1,6 +1,15 @@
 # LangGraph vs 手写 ReAct Agent 对比实验
 
-> 状态：🟡 待执行（API 代理暂时不可用，待恢复后运行）
+> 状态：🟡 runner 已实现并验证可跑通，**待在可访问模型的网络环境下产出数据**
+>
+> `runner.ts` 已完成：直接 import 两版 `runAgent`，复用 `05-agent-eval` 的判分逻辑，
+> 归一化为统一 `{ answer, steps, iterations }` 后判分，自动产出 `round-01-results.json`
+> （+ 成功时的 `round-01-summary.md`）。已做空跑验证：编排 / 归一化 / 判分 / 落盘全链路正常。
+>
+> **当前阻断点**：`.env` 配置的模型端点 `deepgate.ximalaya.local`（内网域名）在本机沙箱外返回
+> `404 Not Found`。需在公司网络 / VPN 下，或换一个可达的 `MODEL_NAME` + `*_BASE_URL` 后重跑。
+> 全部运行失败时 runner 会判定「执行被阻断」，只落带 error 详情的 JSON，不生成对比摘要，
+> 避免把 API 故障误记成框架对比结论。
 
 ## 实验目标
 
@@ -34,15 +43,19 @@
 ## 运行方式
 
 ```bash
-# 手写版
-npx tsx experiments/langgraph-vs-handwritten/runner.ts --engine handwritten --task agent-002
+# 全量对比（两版各跑 5 题）
+npm run eval:compare -- --all
+# 或：npx tsx experiments/langgraph-vs-handwritten/runner.ts --all
 
-# LangGraph 版
+# 单题对比（两版都跑）
+npx tsx experiments/langgraph-vs-handwritten/runner.ts --task agent-002
+
+# 只跑某一版
 npx tsx experiments/langgraph-vs-handwritten/runner.ts --engine langgraph --task agent-002
-
-# 全量对比
-npx tsx experiments/langgraph-vs-handwritten/runner.ts --all
 ```
+
+> 无需手动启动两版 server——runner 直接 import 两版 `runAgent`（npm workspace 依赖已提升到根）。
+> 只需保证 `.env` 里的模型端点可达。
 
 ## 结果文件
 

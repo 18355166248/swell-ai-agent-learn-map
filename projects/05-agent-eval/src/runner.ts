@@ -480,7 +480,7 @@ function fragmentMatches(fragment: string, answer: string, normAnswer: string): 
 }
 
 /** 对关键点拆分成子短语片段，检查 answer 覆盖率 */
-function computeKeypointCoverage(
+export function computeKeypointCoverage(
   keyPoints: string[],
   answer: string,
 ): {
@@ -709,7 +709,7 @@ export function getFailureTypes(checks: CheckResult): FailureType[] {
   return types;
 }
 
-function checksAllPassed(checks: CheckResult): boolean {
+export function checksAllPassed(checks: CheckResult): boolean {
   for (const [key, value] of Object.entries(checks)) {
     if (key === "notes") continue;
     if (value === false) return false;

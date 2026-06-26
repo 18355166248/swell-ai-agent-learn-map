@@ -7,4 +7,6 @@ dist/
 *.js.map
 out.json
 stream.log
+experiments/**/round-*-results.json
+experiments/**/round-*-summary.md
 .DS_Store
