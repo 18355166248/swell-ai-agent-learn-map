@@ -296,10 +296,15 @@ Week 8 已经完成，完成标准不是“再补一个功能”，而是把整�
 
 ### 本周目标
 
-- [ ] 理解 LangGraph 核心概念：StateGraph / Node / Edge / ConditionalEdge
-- [ ] 用 LangGraph 重写 dev-copilot 的 ReAct 循环
-- [ ] 对比手写版和 LangGraph 版的代码复杂度、可读性、可测试性
-- [ ] 用评估体系跑同一套任务集，对比两版通过率
+- [x] 理解 LangGraph 核心概念：StateGraph / Node / Edge / ConditionalEdge（8 段练习脚本）
+- [x] 用 LangGraph 重写 dev-copilot 的 ReAct 循环（`agent.ts` 155 行 vs 手写 771 行）
+- [x] 对比手写版和 LangGraph 版的代码复杂度、可读性、可测试性（见对比 README）
+- [x] 实现对比评估 runner（`experiments/langgraph-vs-handwritten/runner.ts`，全链路验证可跑通）
+- [ ] 用评估体系跑同一套任务集，对比两版通过率 → **阻断中**：`.env` 模型端点（内网 `deepgate.ximalaya.local`）在沙箱外返回 404，待在公司网络/VPN 或换可达模型后由本人重跑 `npm run eval:compare -- --all`
+
+### 收尾状态（Stage 0）
+
+LangGraph 迁移代码 + 对比 runner 均已完成；唯一剩余步骤是**在可访问模型的网络环境下产出对比数据**（runner 已就绪，一条命令即可）。这一步完成后即可把 Week 11 整体标 ✅，并据数据填写对比 README 的「最终判断」。
 
 ### 本周笔记
 
@@ -307,7 +312,9 @@ Week 8 已经完成，完成标准不是“再补一个功能”，而是把整�
 
 ### 踩坑记录
 
-> 开始后补充。
+- 对比 runner 选择「直接 import 两版 runAgent」而非走 HTTP 服务：npm workspace 已把 `@langchain/*` / `tsx` 提升到根 `node_modules`，故 `experiments/` 下的脚本可直接 import 两个 project 的源码，省去起两个 server。
+- 两版输出结构不同（手写 `steps[].action.name` vs LangGraph `messages[].tool_calls[].name`），runner 内统一归一化为 `{ answer, steps:[{toolName}], iterations }` 后再喂给 `checkAgent`。
+- runner 加了「全部失败即判定执行被阻断」的保护：只落带 error 的 JSON、不生成对比摘要，避免把 API 故障误记成框架结论。
 
 ## 关键指标
 

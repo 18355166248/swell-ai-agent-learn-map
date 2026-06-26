@@ -3,6 +3,8 @@
 > 开始日期：2026-05-21（第 1 周从这里起算）
 > 节奏：工作日 40 分钟/天 + 周末 2-3 小时集中写项目
 
+> 📌 **后续路线已重排**（2026-06-18）：目标调整为 AI Coding / Agent Engineer，TS 为主、Context Engineering 首攻。Phase 3 完整计划见 [`docs/ai-coding-roadmap.md`](docs/ai-coding-roadmap.md)。本文件保留 Phase 1/2 的执行记录与方法论。
+
 ## 当前判断
 
 前 10 周内容已在 05/21–05/31（实际 11 天）内加速完成，走完了一条从 Prompt 到 RAG、Agent、评估、记忆的最小可运行学习路径。Week 1-2 接近自然周节奏，Week 3-8 在 3 天内高强度压缩完成，Week 9-10 各占 1-2 天。
