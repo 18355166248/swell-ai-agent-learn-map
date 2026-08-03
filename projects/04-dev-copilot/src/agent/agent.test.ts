@@ -72,6 +72,7 @@ describe("runAgent", () => {
 
     const { runAgent } = await import("./index.js");
     const result = await runAgent("分析项目", {
+      model: "test-model",
       silent: true,
       projectRoot: process.cwd(),
     });
@@ -97,6 +98,7 @@ describe("runAgent", () => {
     const result = await runAgent(
       "这个项目提供了哪些工具函数？请列出每个工具的名称、参数和功能描述。",
       {
+        model: "test-model",
         silent: true,
         projectRoot: process.cwd(),
       },
@@ -158,6 +160,7 @@ describe("runAgent", () => {
 
     const { runAgent } = await import("./index.js");
     await runAgent("这个项目提供了哪些工具函数？请列出每个工具的名称、参数和功能描述。", {
+      model: "test-model",
       silent: true,
       projectRoot: process.cwd(),
     });
