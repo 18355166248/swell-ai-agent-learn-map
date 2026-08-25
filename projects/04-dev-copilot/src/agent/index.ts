@@ -13,18 +13,26 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 config({ path: resolve(__dirname, "..", "..", "..", "..", ".env"), override: false });
 config({ path: resolve(__dirname, "..", "..", ".env"), override: false });
 
+/** 默认 LLM 网关地址（OpenRouter，兼容 OpenAI 协议） */
 const DEFAULT_BASE_URL = "https://openrouter.ai/api/v1";
+/** 单个工具结果注入 messages 前的最大字符数，超出则截断，避免撑爆上下文 */
 const MAX_TOOL_RESULT_CHARS = 8000;
 /** 单次 LLM 请求超时（毫秒） */
 const LLM_TIMEOUT = 90_000;
 /** 单次工具调用超时（毫秒） */
 const TOOL_TIMEOUT = 30_000;
 
+/** Agent 执行轨迹中的一步（ReAct 中的一个 Thought-Action-Observation） */
 export interface AgentStep {
+  /** 所属主循环轮次（1-based） */
   iteration: number;
+  /** 本步的思考内容（LLM 的 content 或默认占位文案） */
   thought: string;
+  /** 本步调用的工具及参数 */
   action?: { name: string; args: Record<string, any> };
+  /** 工具返回的结果（截断后） */
   observation?: string;
+  /** 预留：步骤级错误信息 */
   error?: string;
 }
 
@@ -38,19 +46,28 @@ export interface AgentResult {
   conversation?: ConversationMemory;
 }
 
+/** 流式事件 — 由 onEvent 回调推送，供 CLI / SSE 实时展示执行轨迹 */
 export interface AgentStreamEvent {
   type: "thought" | "tool_call" | "tool_result" | "answer" | "error";
   content: string;
   iteration: number;
+  /** 仅 tool_call / tool_result 事件携带 */
   toolName?: string;
+  /** 仅 tool_call 事件携带 */
   toolArgs?: Record<string, any>;
 }
 
+/** runAgent 的可选配置 */
 export interface AgentOptions {
+  /** 覆盖 .env 中的模型名 */
   model?: string;
+  /** 主循环最大轮数（注意：是循环轮数，不是工具调用次数） */
   maxIterations?: number;
+  /** 流式事件回调（CLI 彩色输出 / SSE 都基于它） */
   onEvent?: (event: AgentStreamEvent) => void;
+  /** 静默模式：关闭 [ReAct] 调试日志 */
   silent?: boolean;
+  /** 文件工具的项目根目录，默认自动检测 */
   projectRoot?: string;
   /** 全局超时（毫秒），默认 300s */
   timeout?: number;
@@ -58,10 +75,16 @@ export interface AgentOptions {
   conversationId?: string;
 }
 
+/**
+ * 判断任务是否为「工具清单」类演示问题。
+ * 这类问题有确定的答案范围（工具目录 + 注册表），命中后走预取/收窄逻辑，
+ * 避免低成本模型在全仓库盲目 search_code 浪费轮次。
+ */
 function isToolInventoryTask(task: string): boolean {
   return /工具函数|工具清单|名称、参数和功能描述|列出每个工具/i.test(task);
 }
 
+/** 根据任务类型返回收窄后的搜索目录，无匹配则返回 null（不干预） */
 function getTaskSearchScope(task: string): string | null {
   if (isToolInventoryTask(task)) {
     return "projects/04-dev-copilot/src/agent/tools";
@@ -72,6 +95,11 @@ function getTaskSearchScope(task: string): string | null {
   return null;
 }
 
+/**
+ * 演示场景的定向修正：当模型把搜索范围写成 "."、"src" 等过宽目录时，
+ * 替换为按任务收窄的目标目录，提高命中效率。
+ * search_docs 不涉及目录参数，直接透传。
+ */
 function normalizeToolArgsForTask(
   task: string,
   toolName: string,
@@ -92,6 +120,7 @@ function normalizeToolArgsForTask(
   return toolArgs;
 }
 
+/** 解析模型名：参数显式传入优先，其次 .env 的 ANTHROPIC_MODEL_NAME，都没有则报错 */
 function resolveModelName(explicitModel?: string): string {
   const model = explicitModel || process.env.ANTHROPIC_MODEL_NAME;
   if (!model) {
@@ -100,6 +129,7 @@ function resolveModelName(explicitModel?: string): string {
   return model;
 }
 
+/** 创建 OpenAI 兼容客户端（密钥/网关地址来自环境变量，默认走 OpenRouter） */
 function getClient(): OpenAI {
   return new OpenAI({
     apiKey: process.env.ANTHROPIC_API_KEY || "",
@@ -111,6 +141,7 @@ function getClient(): OpenAI {
   } as any);
 }
 
+/** 向上逐级查找 name 为 swell-ai-agent-learn-map 的 package.json，定位仓库根目录 */
 function detectProjectRoot(): string {
   let dir = resolve(__dirname);
   for (let i = 0; i < 10; i++) {
@@ -130,6 +161,7 @@ function detectProjectRoot(): string {
   return resolve(__dirname, "..", "..", "..", "..");
 }
 
+/** 指数退避重试：失败后按 1s/2s/4s 间隔重试，用于应对 LLM 网关的瞬时抖动 */
 async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
   let lastErr: any;
   for (let i = 0; i < maxRetries; i++) {
@@ -146,11 +178,17 @@ async function retryWithBackoff<T>(fn: () => Promise<T>, maxRetries = 3): Promis
   throw lastErr;
 }
 
+/** 工具结果超长时截断到 MAX_TOOL_RESULT_CHARS，并标注原始长度 */
 function formatToolResult(raw: string): string {
   if (raw.length <= MAX_TOOL_RESULT_CHARS) return raw;
   return raw.slice(0, MAX_TOOL_RESULT_CHARS) + `\n\n...[截断，共 ${raw.length} 字符]`;
 }
 
+/**
+ * 「工具清单」类问题的上下文预取：在进入 LLM 循环前，
+ * 直接执行 list_files + read_file(registry.ts)，把结果作为额外 user 消息注入。
+ * 这是针对演示任务的捷径优化，普通任务返回 null 不生效。
+ */
 async function preloadToolInventoryContext(
   task: string,
   projectRoot: string,
@@ -216,6 +254,17 @@ async function preloadToolInventoryContext(
   ].join("\n\n");
 }
 
+/**
+ * ReAct Agent 主入口。
+ *
+ * 循环流程：
+ * 1. messages = [system, (历史上下文), user, (预取上下文)]
+ * 2. while (iteration <= maxIterations):
+ *    - 调 LLM（带 tools）
+ *    - 有 content 无 tool_calls → 最终答案，结束
+ *    - 有 tool_calls → 逐个执行工具，结果以 role:"tool" 消息回填，继续下一轮
+ * 3. 超过 maxIterations 仍未得到答案 → 追加总结指令，不带 tools 再调一次
+ */
 export async function runAgent(task: string, options: AgentOptions = {}): Promise<AgentResult> {
   const {
     model,
@@ -229,6 +278,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
   const modelName = resolveModelName(model);
 
   // ---------- 会话记忆 ----------
+  // 三种情况：传入已有 ID（命中则续聊）、传入不存在 ID（新建会话）、未传 ID（新建会话）
   let conversation: ConversationMemory | null = null;
   if (conversationId) {
     conversation = getConversation(conversationId);
@@ -254,15 +304,18 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
   type Message = OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
   const steps: AgentStep[] = [];
+
+  // 初始消息序列：系统 Prompt → 会话历史（如有）→ 用户任务
   const messages: Message[] = [{ role: "system", content: SYSTEM_PROMPT }];
 
-  // 注入对话历史上下文
+  // 注入对话历史上下文（作为第二条 system 消息，让模型感知多轮语境）
   if (historyContext) {
     messages.push({ role: "system", content: historyContext });
   }
 
   messages.push({ role: "user", content: task });
 
+  // 演示任务的上下文预取（见 preloadToolInventoryContext），普通任务为 null
   const preloadedContext = await preloadToolInventoryContext(task, projectRoot, steps, onEvent);
   if (preloadedContext) {
     messages.push({ role: "user", content: preloadedContext });
@@ -353,12 +406,14 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
 
       for (const tc of msg.tool_calls) {
         const toolName = tc.function.name;
+        // tool_calls 的 arguments 是 JSON 字符串，需要解析；解析失败降级为空参数
         let toolArgs: Record<string, any>;
         try {
           toolArgs = JSON.parse(tc.function.arguments);
         } catch {
           toolArgs = {};
         }
+        // 演示任务的搜索范围定向修正（见 normalizeToolArgsForTask）
         toolArgs = normalizeToolArgsForTask(task, toolName, toolArgs);
 
         log(`🔧 调用工具: ${toolName} ${JSON.stringify(toolArgs).slice(0, 120)}`);
@@ -374,6 +429,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
         const toolT0 = Date.now();
         let rawResult: string;
         try {
+          // executeTool 内部已做错误包装，这里的 catch 是兜底
           rawResult = await executeTool(toolName, toolArgs, projectRoot);
         } catch (toolErr: any) {
           rawResult = `工具执行异常: ${toolErr.message}`;
@@ -417,7 +473,8 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
     break;
   }
 
-  // 达到最大迭代次数，强制总结
+  // 达到最大迭代次数仍无答案 → 强制总结
+  // 追加一条 user 指令并不带 tools 再调一次，迫使模型只输出结论
   if (!finalAnswer) {
     log(`>>> 达到最大迭代次数 (${maxIterations})，请求 LLM 强制总结...`);
 
@@ -463,7 +520,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
 
   clearTimeout(globalTimer);
 
-  // 保存本轮对话到会话记忆
+  // 保存本轮对话到会话记忆：任务 + 最终答案 + 工具调用链摘要
   if (conversation && finalAnswer) {
     const stepsSummary = steps
       .filter((s) => s.action)
