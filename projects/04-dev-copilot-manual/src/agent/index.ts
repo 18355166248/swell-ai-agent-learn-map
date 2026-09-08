@@ -144,6 +144,42 @@ function isToolInventoryTask(task: string): boolean {
   return /工具函数|工具清单|名称、参数和功能描述|列出每个工具/i.test(task);
 }
 
+/** 根据任务类型返回收窄后的搜索目录，无匹配则返回 null（不干预） */
+function getTaskSearchScope(task: string): string | null {
+  if (isToolInventoryTask(task)) {
+    return "projects/04-dev-copilot-manual/src/agent/tools";
+  }
+  if (/read_file|路径安全检查|目录穿越|executeTool|toolFactories|registry\.ts/i.test(task)) {
+    return "projects/04-dev-copilot-manual/src/agent";
+  }
+  return null;
+}
+
+/**
+ * 演示场景的定向修正：当模型把搜索范围写成 "."、"src" 等过宽目录时，
+ * 替换为按任务收窄的目标目录，提高命中效率。
+ * search_docs 不涉及目录参数，直接透传。
+ */
+function normalizeToolArgsForTask(
+  task: string,
+  toolName: string,
+  toolArgs: Record<string, any>,
+): Record<string, any> {
+  if (toolName === "search_docs") return toolArgs;
+
+  const scopeDir = getTaskSearchScope(task);
+  if (!scopeDir) return toolArgs;
+
+  if (toolName === "list_files" || toolName === "search_code" || toolName === "grep") {
+    const dir = typeof toolArgs.dir === "string" ? toolArgs.dir.trim() : "";
+    if (!dir || dir === "." || dir === "src" || dir === "src/agent" || dir === "src/agent/tools") {
+      return { ...toolArgs, dir: scopeDir };
+    }
+  }
+
+  return toolArgs;
+}
+
 /** 工具结果超长时截断到 MAX_TOOL_RESULT_CHARS，并标注原始长度 */
 function formatToolResult(raw: string): string {
   if (raw.length <= MAX_TOOL_RESULT_CHARS) return raw;
@@ -349,6 +385,62 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
       log(
         `tool_calls: [${msg.tool_calls.map((tc) => `${tc.function.name}(${tc.function.arguments.slice(0, 80)})`).join(", ")}]`,
       );
+    }
+
+    if (msg.tool_calls && msg.tool_calls.length > 0) {
+      const thought = msg.content || "调用工具获取更多信息...";
+      onEvent?.({ type: "thought", content: thought, iteration });
+
+      // 推送 assistant message（含 tool_calls）
+      messages.push({
+        role: "assistant",
+        content: msg.content || null,
+        tool_calls: msg.tool_calls,
+      } as any);
+
+      for (const tc of msg.tool_calls) {
+        const toolName = tc.function.name;
+        // tool_calls 的 arguments 是 JSON 字符串，需要解析；解析失败降级为空参数
+        let toolArgs: Record<string, any>;
+        try {
+          toolArgs = JSON.parse(tc.function.arguments);
+        } catch {
+          toolArgs = {};
+        }
+        // 演示任务的搜索范围定向修正（见 normalizeToolArgsForTask）
+        toolArgs = normalizeToolArgsForTask(task, toolName, toolArgs);
+
+        log(`🔧 调用工具: ${toolName} ${JSON.stringify(toolArgs).slice(0, 120)}`);
+
+        onEvent?.({
+          type: "tool_call",
+          content: `调用 ${toolName}`,
+          iteration,
+          toolName,
+          toolArgs,
+        });
+
+        const toolT0 = Date.now();
+        let rawResult: string;
+        try {
+          log(123131313131, toolName, toolArgs, projectRoot);
+          // executeTool 内部已做错误包装，这里的 catch 是兜底
+          rawResult = await executeTool(toolName, toolArgs, projectRoot);
+        } catch (toolErr: any) {
+          rawResult = `工具执行异常: ${toolErr.message}`;
+          log(`   ⚠ 工具异常: ${toolErr.message}`);
+        }
+        const toolLatency = Date.now() - toolT0;
+        const resultStr = formatToolResult(rawResult);
+
+        onEvent?.({
+          type: "tool_result",
+          content: resultStr,
+          iteration,
+          toolName,
+          toolArgs,
+        });
+      }
     }
   }
 }
