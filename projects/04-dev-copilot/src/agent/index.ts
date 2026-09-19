@@ -120,11 +120,11 @@ function normalizeToolArgsForTask(
   return toolArgs;
 }
 
-/** 解析模型名：参数显式传入优先，其次 .env 的 ANTHROPIC_MODEL_NAME，都没有则报错 */
+/** 解析模型名：参数显式传入优先，其次 .env 的 OPENAI_MODEL_NAME，都没有则报错 */
 function resolveModelName(explicitModel?: string): string {
-  const model = explicitModel || process.env.ANTHROPIC_MODEL_NAME;
+  const model = explicitModel || process.env.OPENAI_MODEL_NAME;
   if (!model) {
-    throw new Error("未设置模型，请通过参数传入，或在 .env 中配置 ANTHROPIC_MODEL_NAME");
+    throw new Error("未设置模型，请通过参数传入，或在 .env 中配置 OPENAI_MODEL_NAME");
   }
   return model;
 }
@@ -132,8 +132,8 @@ function resolveModelName(explicitModel?: string): string {
 /** 创建 OpenAI 兼容客户端（密钥/网关地址来自环境变量，默认走 OpenRouter） */
 function getClient(): OpenAI {
   return new OpenAI({
-    apiKey: process.env.ANTHROPIC_API_KEY || "",
-    baseURL: process.env.ANTHROPIC_BASE_URL || DEFAULT_BASE_URL,
+    apiKey: process.env.OPENAI_API_KEY || "",
+    baseURL: process.env.OPENAI_BASE_URL || DEFAULT_BASE_URL,
     defaultHeaders: {
       "HTTP-Referer": "https://github.com/swell-ai-agent-learn-map",
       "X-Title": "Dev Copilot",
@@ -363,6 +363,8 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
       break;
     }
 
+    console.log("msg", msg.tool_calls?.[0].function.arguments);
+
     const finishReason = response.choices[0]?.finish_reason;
     const usage = response.usage;
     log(
@@ -414,6 +416,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
           toolArgs = {};
         }
         // 演示任务的搜索范围定向修正（见 normalizeToolArgsForTask）
+        console.log("toolArgs", toolArgs);
         toolArgs = normalizeToolArgsForTask(task, toolName, toolArgs);
 
         log(`🔧 调用工具: ${toolName} ${JSON.stringify(toolArgs).slice(0, 120)}`);
@@ -429,6 +432,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
         const toolT0 = Date.now();
         let rawResult: string;
         try {
+          log(123131313131, toolName, toolArgs, projectRoot);
           // executeTool 内部已做错误包装，这里的 catch 是兜底
           rawResult = await executeTool(toolName, toolArgs, projectRoot);
         } catch (toolErr: any) {

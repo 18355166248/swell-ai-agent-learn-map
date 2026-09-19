@@ -42,6 +42,8 @@ export interface AgentResult {
   iterations: number;
   /** 会话 ID（如果启用了记忆） */
   conversationId?: string;
+  /** 本轮会话元信息（供调用方持久化） */
+  conversation?: ConversationMemory;
 }
 
 /** 流式事件 — 由 onEvent 回调推送，供 CLI / SSE 实时展示执行轨迹 */
@@ -202,13 +204,13 @@ async function preloadToolInventoryContext(
   const preloadPlan = [
     {
       toolName: "list_files",
-      toolArgs: { dir: "projects/04-dev-copilot/src/agent/tools" },
+      toolArgs: { dir: "projects/04-dev-copilot-manual/src/agent/tools" },
       note: "预取工具目录结构",
     },
     {
       toolName: "read_file",
       toolArgs: {
-        path: "projects/04-dev-copilot/src/agent/tools/registry.ts",
+        path: "projects/04-dev-copilot-manual/src/agent/tools/registry.ts",
         startLine: 1,
         endLine: 220,
       },
@@ -382,11 +384,23 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
     }
 
     if (msg.tool_calls?.length) {
+      console.log("msg1111", msg.tool_calls?.[0].function.arguments);
       log(
         `tool_calls: [${msg.tool_calls.map((tc) => `${tc.function.name}(${tc.function.arguments.slice(0, 80)})`).join(", ")}]`,
       );
     }
 
+    // 情况 1：最终答案（有内容，没有 tool_calls）
+    if (msg.content && !msg.tool_calls) {
+      log(`>>> 最终答案 (${msg.content.length} 字符)`);
+      steps.push({ iteration, thought: msg.content });
+      onEvent?.({ type: "answer", content: msg.content, iteration });
+      finalAnswer = msg.content;
+      messages.push({ role: "assistant", content: msg.content });
+      break;
+    }
+
+    // 情况 2：工具调用
     if (msg.tool_calls && msg.tool_calls.length > 0) {
       const thought = msg.content || "调用工具获取更多信息...";
       onEvent?.({ type: "thought", content: thought, iteration });
@@ -408,6 +422,7 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
           toolArgs = {};
         }
         // 演示任务的搜索范围定向修正（见 normalizeToolArgsForTask）
+        console.log("toolArgs", toolArgs);
         toolArgs = normalizeToolArgsForTask(task, toolName, toolArgs);
 
         log(`🔧 调用工具: ${toolName} ${JSON.stringify(toolArgs).slice(0, 120)}`);
@@ -423,7 +438,6 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
         const toolT0 = Date.now();
         let rawResult: string;
         try {
-          log(123131313131, toolName, toolArgs, projectRoot);
           // executeTool 内部已做错误包装，这里的 catch 是兜底
           rawResult = await executeTool(toolName, toolArgs, projectRoot);
         } catch (toolErr: any) {
@@ -440,7 +454,93 @@ export async function runAgent(task: string, options: AgentOptions = {}): Promis
           toolName,
           toolArgs,
         });
+
+        steps.push({
+          iteration,
+          thought,
+          action: { name: toolName, args: toolArgs },
+          observation: resultStr,
+        });
+
+        messages.push({
+          role: "tool",
+          tool_call_id: tc.id,
+          content: resultStr,
+        } as any);
       }
+
+      log(`迭代 ${iteration} 完成 → 消息总数: ${messages.length}`);
+      continue;
     }
+
+    // 情况 3：无内容无 tool_calls（异常情况）
+    log(`✗ 无 content 也无 tool_calls，终止循环`);
+    finalAnswer = "Agent 未返回内容或工具调用";
+    break;
   }
+
+  // 达到最大迭代次数仍无答案 → 强制总结
+  // 追加一条 user 指令并不带 tools 再调一次，迫使模型只输出结论
+  if (!finalAnswer) {
+    log(`>>> 达到最大迭代次数 (${maxIterations})，请求 LLM 强制总结...`);
+
+    messages.push({
+      role: "user",
+      content: "你已经收集了足够的信息。请根据以上所有工具调用的结果，给出完整的最终分析。",
+    } as any);
+
+    try {
+      const t0 = Date.now();
+      const response = await client.chat.completions.create(
+        {
+          model: modelName,
+          messages,
+          temperature: 0.3,
+          max_tokens: 2048,
+        },
+        { signal: abortController.signal },
+      );
+      finalAnswer = response.choices[0]?.message?.content || "无法生成总结";
+      log(`强制总结完成 | 耗时: ${Date.now() - t0}ms | ${finalAnswer.length} 字符`);
+    } catch {
+      finalAnswer = "达到最大迭代次数，且总结请求失败";
+      log(`✗ 强制总结失败`);
+    }
+
+    onEvent?.({ type: "answer", content: finalAnswer, iteration: maxIterations + 1 });
+    steps.push({ iteration: maxIterations + 1, thought: "达到上限，强制总结" });
+  }
+
+  log(`========== Agent 结束 ==========`);
+  log(
+    `总迭代: ${completedIterations} | 总步骤: ${steps.length} | 答案长度: ${finalAnswer.length} 字符`,
+  );
+  if (steps.filter((s) => s.action).length > 0) {
+    log(
+      `工具调用明细: ${steps
+        .filter((s) => s.action)
+        .map((s) => s.action!.name)
+        .join(" → ")}`,
+    );
+  }
+
+  clearTimeout(globalTimer);
+
+  // 保存本轮对话到会话记忆：任务 + 最终答案 + 工具调用链摘要
+  if (conversation && finalAnswer) {
+    const stepsSummary = steps
+      .filter((s) => s.action)
+      .map((s) => `${s.action!.name}(${JSON.stringify(s.action!.args).slice(0, 80)})`)
+      .join(" → ");
+    appendTurn(conversation.id, task, finalAnswer, stepsSummary || undefined);
+    conversation = getConversation(conversation.id); // 重新加载以获取最新数据
+  }
+
+  return {
+    answer: finalAnswer,
+    steps,
+    iterations: completedIterations,
+    conversationId: conversation?.id,
+    conversation: conversation ?? undefined,
+  };
 }
