@@ -1,7 +1,7 @@
 # 项目 04（手搓版）：AI Dev Copilot — 从零实现 ReAct Agent
 
 > 参考实现：`projects/04-dev-copilot`（先不看源码，按步骤自己写，卡住再对照）
-> 当前状态：**阶段 1 工具层已完成**（含进阶的 searchDocs），下一步阶段 2 Agent 循环
+> 当前状态：**阶段 1 工具层、阶段 2 Agent 循环、CLI 入口及会话记忆已完成**（含进阶的 searchDocs）；Web 入口与测试待完成
 
 ## 这是什么
 
@@ -46,9 +46,9 @@
 
 ### 阶段 2：Agent 循环（核心）
 
-- [ ] **6. `src/agent/prompts.ts`** — 系统 Prompt
+- [x] **6. `src/agent/prompts.ts`** — 系统 Prompt
   - 定义角色（代码分析助手）、工具使用规范、最终答案输出格式
-- [ ] **7. `src/agent/index.ts`** — 最小 ReAct 循环（先跑通，不加健壮性）
+- [x] **7. `src/agent/index.ts`** — 最小 ReAct 循环（先跑通，不加健壮性）
   - `runAgent(task, options): Promise<AgentResult>`
   - messages = `[system, user]` → 循环调 `client.chat.completions.create({ messages, tools })`
   - 三分支：① 有 content 无 tool_calls → 最终答案 break；② 有 tool_calls → push assistant 消息 → 逐个执行 → push `role: "tool"` 消息（带 `tool_call_id`）→ continue；③ 都没有 → break
@@ -56,7 +56,7 @@
   - 环境变量：`ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL` / `ANTHROPIC_MODEL_NAME`（OpenAI 兼容协议）
   - dotenv 先加载仓库根 `.env` 再加载项目 `.env`（override: false）
   - ✅ 验收：`npx tsx` 临时脚本跑「分析这个项目有哪些工具函数」，能看到完整工具调用链
-- [ ] **8. 健壮性增强**（在 7 基础上迭代）
+- [x] **8. 健壮性增强**（在 7 基础上迭代）
   - tool result 超 8000 字符截断
   - LLM 调用指数退避重试 3 次（1s/2s/4s）
   - AbortController 全局超时（默认 300s）
@@ -66,7 +66,7 @@
 
 ### 阶段 3：入口层
 
-- [ ] **9. `cli.ts`** — CLI 入口
+- [x] **9. `cli.ts`** — CLI 入口
   - 手动 `process.argv` 解析（`--model` / `--max-iterations`），不用 commander
   - 彩色输出：💭 思考 / 🔧 工具调用 / ✅ 答案
   - 项目根目录自动检测（向上找 `package.json` name 为 `swell-ai-agent-learn-map`）
@@ -79,7 +79,7 @@
 
 - [x] **11. `src/agent/tools/searchDocs.ts`** — RAG 文档检索（已实现；embedding 网关 404 时由 `executeTool` 包装为错误字符串返回，属环境限制）
   - 通过 `doc-rag` workspace 包复用 02 的检索能力，合并 02/03 两个向量库
-- [ ] **12. `src/agent/memory.ts`** — 会话记忆
+- [x] **12. `src/agent/memory.ts`** — 会话记忆
   - JSON 文件持久化 + 历史上下文注入为第二条 system 消息
 - [ ] **13. 测试** — Vitest
   - 路径安全边界、pattern 过滤、mock OpenAI SDK 验证多 tool call 轮次语义

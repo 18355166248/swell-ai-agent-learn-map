@@ -46,6 +46,99 @@
 | `projects/03-req-analyst` | 六维度字段完整性、规范引用准确性、场景适配性、关键点覆盖率                                |
 | `projects/04-dev-copilot` | 任务完成度、工具调用路径（expectedTools 验证）、边界行为（constraint 检测）、关键点覆盖率 |
 
+## 建议学习路线（按顺序）
+
+建议先只学习 **Agent 评估主线**，因为它与项目 04 衔接最紧密。完成一次 Agent 回归后，再把同样的方法扩展到 RAG 和 Req-Analyst；不要一开始同时研究三套规则。
+
+### 第 1 步：先看任务和结果，不急着看实现
+
+- [ ] 阅读 `../../experiments/agent-evals/agent-eval-round-01.json`
+- [ ] 重点理解 `expectedTools`、`expectedKeyPoints`、`category` 和 `checks`
+- [ ] 对照 `reports/round-1-agent.json`，观察一条任务如何变成 `checks`、`failureTypes` 和 `passed`
+
+学习产出：能用自己的话说明“输入任务、系统输出、检查结果、最终判定”四者之间的关系。
+
+### 第 2 步：理解评估结果的数据模型
+
+- [ ] 阅读 `src/schema.ts`
+- [ ] 理解 `EvalType`、`CheckResult`、`FailureType`、`EvalTaskResult`、`EvalRoundReport`
+- [ ] 重点区分“某个维度失败”和“整条任务失败”
+
+学习产出：能解释 `CheckResult -> FailureType -> EvalRoundReport` 的数据流。
+
+### 第 3 步：从测试理解判分规则
+
+- [ ] 阅读 `src/check-functions.test.ts` 中的 Agent 测试
+- [ ] 找到工具缺失、越权修改、敏感信息泄露、关键点缺失分别如何判定
+- [ ] 在当前目录运行 `npm test`
+
+学习产出：知道一条 Agent 回答为什么通过或失败，而不只是看到最终通过率。
+
+### 第 4 步：学习关键点覆盖率
+
+- [ ] 阅读 `src/runner.ts` 的 `normalizeText()`、`fragmentMatches()` 和 `computeKeypointCoverage()`
+- [ ] 理解 Markdown 清理、数字单位归一化、精确匹配和词级模糊匹配
+- [ ] 思考规则匹配可能产生的误报和漏报
+
+学习产出：能新增一条关键点匹配测试，并判断阈值调整会带来什么影响。
+
+### 第 5 步：学习 Agent 专属检查
+
+- [ ] 阅读 `checkAgent()`
+- [ ] 理解 `expectedTools` 为什么要求全部命中
+- [ ] 理解 `constraint_ok`、`keypoint_coverage`、`task_completed` 的职责边界
+- [ ] 阅读 `getFailureTypes()` 和 `checksAllPassed()`
+
+学习产出：能独立设计一条普通任务和一条 boundary 任务。
+
+### 第 6 步：串起完整评估执行链路
+
+- [ ] 阅读 `callAgent()`，了解评估器如何请求被测 Agent 并整理工具轨迹
+- [ ] 阅读 `runEval()`，跟踪“加载任务 -> 调用服务 -> 自动判分 -> 汇总 -> 写报告”的流程
+- [ ] 阅读上一轮报告加载逻辑，理解 `newFailures`、`newPasses`、`passRateDelta`
+
+学习产出：能画出一次评估从任务 JSON 到报告 JSON 的完整数据流。
+
+### 第 7 步：最后看 CLI 和运行配置
+
+- [ ] 阅读 `src/config.ts`、`src/cli-options.ts`、`src/cli.ts`、`src/logging.ts`
+- [ ] 理解服务地址、任务集路径、轮次和模型名如何进入运行配置
+- [ ] 阅读 `src/cli-options.test.ts` 和 `src/logging.test.ts`
+
+注意：当前 `--model` 会记录到评估报告，但不会随 HTTP 请求传给被测服务。为了保证报告中的模型名与实际运行一致，需要使用相同模型配置启动被测服务。
+
+### 第 8 步：亲自完成一次回归实验
+
+先启动 `projects/04-dev-copilot` 服务，再在本项目目录执行：
+
+```bash
+npm run eval:agent -- --round=2 --model=<实际使用的模型名>
+```
+
+然后调整一次项目 04 的 Prompt 或工具策略，使用相同任务集运行下一轮：
+
+```bash
+npm run eval:agent -- --round=3 --model=<实际使用的模型名>
+```
+
+- [ ] 对比两轮的通过率和失败类型
+- [ ] 检查 `newFailures`，确认优化没有破坏原本通过的任务
+- [ ] 检查 `newPasses`，确认修改确实修复了目标问题
+- [ ] 选一个失败案例，判断它是系统问题还是评估规则误判
+
+学习产出：完成一次“发现失败 -> 调整系统 -> 重跑评估 -> 检查回归”的最小闭环。
+
+> `05-agent-eval` 当前调用的是 `projects/04-dev-copilot` 的 `POST /api/agent`。`04-dev-copilot-manual` 尚未实现对应 HTTP 服务，不能直接接入；可以先使用参考版完成本路线，再决定是否为手搓版补充服务入口。
+
+### 学完标准
+
+满足下面四项，就可以认为项目 05 的核心内容已经学完：
+
+- 能写出一条包含明确成功标准的评估任务
+- 能解释一次失败属于系统问题还是评估规则问题
+- 能独立运行新一轮评估并阅读回归字段
+- 修改 Prompt 或工具策略后，会先跑回归再判断效果
+
 ## 核心设计
 
 ### 关键点覆盖率引擎
