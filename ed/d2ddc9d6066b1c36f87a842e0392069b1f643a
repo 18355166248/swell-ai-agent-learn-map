@@ -1,0 +1,21 @@
+projects/05-agent-eval/README.md
+  s_b2c644f2734220::t_d824d9200aa647 49-141
+projects/04-dev-copilot-manual/README.md
+  s_b2c644f2734220::t_3bd59c60fd7cb6 4,49,51,59,69,82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.1",
+  "base_commit_sha": "edd2ddc9d6066b1c36f87a842e0392069b1f643a",
+  "prompts": {},
+  "sessions": {
+    "s_b2c644f2734220": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0bd99-38ef-7571-a0cd-bd81ed2b3f55",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "lang.jiang <lang.jiang@ximalaya.com>"
+    }
+  }
+}
