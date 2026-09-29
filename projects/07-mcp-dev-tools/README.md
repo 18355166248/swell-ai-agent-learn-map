@@ -52,6 +52,14 @@ MCP Client / Inspector / Host
 
 ## 学习步骤（按顺序）
 
+每一步完成后，都在 `notes.md` 记录以下内容，确保学习过程可以复习和复现：
+
+1. 本步目标与核心概念
+2. 实际新增或修改的文件
+3. 执行过的命令及其作用
+4. 验证结果与完成标准
+5. 容易混淆的边界或遇到的问题
+
 ### 第 0 步：建立协议心智模型
 
 - [x] 区分 Host、Client、Server 三个角色
@@ -64,10 +72,10 @@ MCP Client / Inspector / Host
 
 ### 第 1 步：认识项目骨架与 SDK
 
-- [ ] 阅读 `package.json` 和 `tsconfig.json`
-- [ ] 查看官方 Server 与 Client 包的职责差异
-- [ ] 运行 `npm install`
-- [ ] 运行 `npm run typecheck`
+- [x] 阅读 `package.json` 和 `tsconfig.json`
+- [x] 查看官方 Server 与 Client 包的职责差异
+- [x] 运行 `npm install`
+- [x] 运行 `npm run typecheck`
 
 学习产出：知道为什么 Server 和 Client 使用两个独立 SDK 包，以及为什么项目必须使用 ESM。
 

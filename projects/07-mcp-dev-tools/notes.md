@@ -68,7 +68,52 @@ MCP Server（本项目未来的 server.ts）
 
 ## 第 1 步：项目骨架与 SDK
 
-待补充。
+### 本步目标
+
+理解项目的 Node.js、TypeScript 和 MCP SDK 配置，确认开始编写 Server 之前的依赖与类型检查环境可用。
+
+### SDK 职责
+
+- `@modelcontextprotocol/server`：供 MCP Server 进程使用，负责声明能力、注册工具并处理客户端请求。
+- `@modelcontextprotocol/client`：供 Host 内部的 Client 或我们自己编写的独立 Client 使用，负责连接 Server、发现能力并发起调用。
+- `zod`：在运行时校验工具的输入参数；TypeScript 类型在编译后会被擦除，不能代替运行时校验。
+
+Server 与 Client 是相对的协议角色，并不是“开发者使用”和“宿主使用”的固定划分。本项目第 2 步会使用 Server 包，第 5 步的 `src/client.ts` 会直接使用 Client 包。
+
+### ESM 配置
+
+`package.json` 中的 `"type": "module"` 告诉 Node.js 把 `.js` 文件按 ESM 解释，源码使用 `import` 和 `export`。ESM 是当前项目选择的标准模块系统，不应简单理解为“最新版一定优于 CommonJS”。
+
+`tsconfig.json` 中与它配套的关键配置：
+
+- `target: "ES2022"`：目标运行环境是支持现代 JavaScript 的 Node.js。
+- `module: "ESNext"`：保留 ESM 模块语法。
+- `moduleResolution: "bundler"`：按照现代包的导出映射解析模块。
+- `strict: true`：启用严格类型检查。
+- `noEmit: true`：TypeScript 只检查类型，不生成 JavaScript 文件。
+
+### 执行命令
+
+```bash
+npm install --workspace=mcp-dev-tools
+npm ls @modelcontextprotocol/server @modelcontextprotocol/client zod --workspace=mcp-dev-tools
+npm run typecheck --workspace=mcp-dev-tools
+```
+
+### 验证结果
+
+- Node.js：`20.20.0`，符合 Node.js 20+ 的要求。
+- `@modelcontextprotocol/server`：`2.0.0`。
+- `@modelcontextprotocol/client`：`2.0.0`。
+- `zod`：`4.6.5`。
+- `tsc --noEmit` 通过，没有类型错误，也没有生成 JavaScript 文件。
+- `npm install` 确认依赖已是最新状态；Husky 因当前沙箱不能修改 `.git/config` 输出警告，但没有影响依赖安装，也没有产生文件变更。
+
+### 学习确认
+
+- Server 包由 MCP Server 使用；Client 包既可以由现成 Host 使用，也可以由自定义 Client 使用。
+- `"type": "module"` 让 Node.js 使用 ESM 模块规则，源码采用 `import/export`。
+- `--noEmit` 表示只进行类型检查，不输出编译后的 JavaScript。
 
 ## 第 2 步：最小 MCP Server
 
