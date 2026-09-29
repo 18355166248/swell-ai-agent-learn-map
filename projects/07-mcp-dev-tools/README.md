@@ -54,11 +54,11 @@ MCP Client / Inspector / Host
 
 ### 第 0 步：建立协议心智模型
 
-- [ ] 区分 Host、Client、Server 三个角色
-- [ ] 理解 MCP 的 Tools、Resources、Prompts 三类能力
-- [ ] 理解 `initialize -> tools/list -> tools/call` 的基本交互
-- [ ] 理解 MCP 负责“能力发现和调用协议”，模型仍负责“何时选择工具”
-- [ ] 理解 stdio 只是传输方式，协议消息本质上是 JSON-RPC
+- [x] 区分 Host、Client、Server 三个角色
+- [x] 理解 MCP 的 Tools、Resources、Prompts 三类能力
+- [x] 理解 `initialize -> tools/list -> tools/call` 的基本交互
+- [x] 理解 MCP 负责“能力发现和调用协议”，模型仍负责“何时选择工具”
+- [x] 理解 stdio 只是传输方式，协议消息本质上是 JSON-RPC
 
 学习产出：能画出 Host、MCP Client、MCP Server、真实工具之间的数据流。
 
