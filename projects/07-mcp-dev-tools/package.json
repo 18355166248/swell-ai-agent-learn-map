@@ -5,6 +5,7 @@
   "description": "通过 MCP 暴露只读开发工具的学习项目",
   "type": "module",
   "scripts": {
+    "client": "tsx src/client.ts",
     "server": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"

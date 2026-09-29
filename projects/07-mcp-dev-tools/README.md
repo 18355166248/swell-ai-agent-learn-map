@@ -1,6 +1,6 @@
 # 项目 07：MCP Dev Tools
 
-> 当前状态：第 4 步完成，三个只读 MCP 工具已接入
+> 当前状态：第 5 步完成，stdio Client/Server 闭环已跑通
 > 学习目标：使用官方 TypeScript SDK，把项目 04 的只读开发工具暴露为 MCP Server，并通过 MCP Client、Inspector 和真实 Host 验证调用
 
 ## 这是什么
@@ -111,11 +111,11 @@ MCP Client / Inspector / Host
 
 ### 第 5 步：手写 MCP Client
 
-- [ ] 创建 `src/client.ts`
-- [ ] 使用 `Client` 和 `StdioClientTransport` 启动本项目 Server
-- [ ] 调用 `listTools()` 输出工具名称和输入 Schema
-- [ ] 使用 `callTool()` 分别调用三个工具
-- [ ] 调用完成后关闭 Client 和子进程
+- [x] 创建 `src/client.ts`
+- [x] 使用 `Client` 和 `StdioClientTransport` 启动本项目 Server
+- [x] 调用 `listTools()` 输出工具名称和输入 Schema
+- [x] 使用 `callTool()` 分别调用三个工具
+- [x] 调用完成后关闭 Client 和子进程
 
 学习产出：亲眼看到 MCP Client 完成进程启动、协议握手、能力发现和工具调用。
 
@@ -174,7 +174,7 @@ npx @modelcontextprotocol/inspector npx tsx src/server.ts
 ├── src/
 │   ├── index.ts              # 对外导出项目名称与 Server 工厂
 │   ├── server.ts             # stdio Server 入口与 Server 工厂
-│   ├── client.ts             # 第 5 步创建
+│   ├── client.ts             # stdio Client 与调用演示
 │   └── tools/
 │       ├── list-files.ts
 │       ├── read-file.ts

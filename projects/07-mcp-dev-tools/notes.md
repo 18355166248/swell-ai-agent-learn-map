@@ -306,7 +306,77 @@ registerXxxTool()
 - `readOnlyHint` 等 annotations 只向 Client、Host 或模型描述工具性质，不会自动阻止代码写文件，不能代替 `safePath()` 等真实安全检查。
 - `projectRoot` 在入口统一转换成绝对路径，让路径越界判断和相对文件名计算使用同一个稳定基准。
 
-## 第 5～6 步：Client、Inspector 与真实 Host
+## 第 5 步：手写 MCP Client
+
+### 本步目标
+
+创建一个独立 Client，由它启动 Server 子进程，通过真实 stdin/stdout 完成版本协商、能力发现和三次工具调用，最后关闭连接并回收子进程。
+
+### 实际改动
+
+- 新增 `src/client.ts`：创建 `Client` 和 `StdioClientTransport`，调用三个只读工具并打印结果。897
+- 在 `package.json` 新增 `client` 脚本，可通过 `npm run client` 运行完整演示。
+
+Client 创建的 Transport 配置：
+
+```ts
+const transport = new StdioClientTransport({
+  command: process.execPath,
+  args: ["--import", "tsx", SERVER_PATH],
+  cwd: PROJECT_DIR,
+});
+```
+
+- `command` 使用当前 Node.js 可执行文件，不依赖全局安装的 Node 路径。
+- `--import tsx` 让 Node.js 20 可以执行 `server.ts`。
+- `cwd` 同时决定 Server 默认使用的 `projectRoot`。
+- Transport 启动子进程，并把 Client 写入的协议消息连接到 Server stdin，把 Server stdout 连接回 Client 的协议解析器。
+- Server stderr 默认继承到 Client 终端，因此调试日志可见，但不会进入协议解析器。
+
+### 调用过程
+
+```text
+client.connect(transport)
+  ↓ 启动 Server 子进程并完成协议初始化
+client.listTools()
+  ↓ 获取工具名称、描述和输入 JSON Schema
+client.callTool(...)
+  ↓ 分别调用 list_files、read_file、search_code
+client.close()
+  ↓ 关闭 Transport 并回收 Server 子进程
+```
+
+Client 自己的 `console.log()` 可以正常打印学习结果，因为 Client stdout 是面向用户的输出；只有 Server stdout 是 MCP 协议专用通道。
+
+### 执行命令
+
+```bash
+cd projects/07-mcp-dev-tools
+npm run client
+```
+
+不需要提前运行 `npm run server`。`StdioClientTransport` 会自行启动和管理 Server 子进程。
+
+### 验证结果
+
+- `tools/list` 返回 `project_info`、`list_files`、`read_file`、`search_code` 及各自的 JSON Schema。
+- `list_files` 返回 `src` 下 7 个 TypeScript 文件。
+- `read_file` 返回 `README.md` 第 1～5 行。
+- `search_code` 搜索 `McpServer`，返回 10 条结果及正确的相对路径和行号。
+- Client 命令正常结束，证明连接和 Server 子进程均已回收。
+
+### 问题记录
+
+沙箱内直接运行 `tsx` CLI 时仍会因本地 IPC 管道权限得到 `EPERM`。在允许创建该管道的环境中运行同一个 `npm run client` 后，stdio MCP 全链路验证通过。这是 `tsx` CLI 的运行环境限制，不是 MCP 通信失败。
+
+### 学习确认
+
+- `StdioClientTransport` 负责启动 Server 子进程；`client.connect(transport)` 启动 Transport 并完成 MCP 连接，因此不需要预先单独运行 Server。
+- Client 也会向 Server 发送消息，但 Transport 直接写入 Server 子进程的 stdin；Client 自己的 stdout 面向终端用户，可以使用 `console.log()`。
+- Server stdout 会被 Transport 当作 MCP 协议消息读取，因此 Server 普通日志必须写入 stderr。
+- `finally` 保证正常完成或中途报错时都会调用 `client.close()`，关闭连接、Transport 和 Server 子进程，避免进程及文件描述符残留。
+
+## 第 6 步：Inspector 与真实 Host
 
 待补充。
 
