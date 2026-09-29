@@ -1,0 +1,19 @@
+projects/06-langgraph-copilot/README.md
+  s_b2c644f2734220::t_7c0bb5aeee813e 1-439
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.1",
+  "base_commit_sha": "b0cfb918db99fd7ce15fce5185da78a1c1041b60",
+  "prompts": {},
+  "sessions": {
+    "s_b2c644f2734220": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0bd99-38ef-7571-a0cd-bd81ed2b3f55",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "lang.jiang <lang.jiang@ximalaya.com>"
+    }
+  }
+}
