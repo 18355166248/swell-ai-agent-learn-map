@@ -1,9 +1,12 @@
+import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
 import { registerListFilesTool } from "./tools/list-files.js";
+import { registerReadFileTool } from "./tools/read-file.js";
+import { registerSearchCodeTool } from "./tools/search-code.js";
 
 const PROJECT_INFO = {
   name: "mcp-dev-tools",
@@ -17,7 +20,8 @@ interface CreateServerOptions {
 }
 
 export function createServer(options: CreateServerOptions = {}): McpServer {
-  const projectRoot = options.projectRoot ?? process.cwd();
+  // 旧工具会基于根目录计算相对路径，入口统一绝对化可避免相对路径导致展示和安全判断漂移。
+  const projectRoot = resolve(options.projectRoot ?? process.cwd());
   const server = new McpServer({
     name: PROJECT_INFO.name,
     version: PROJECT_INFO.version,
@@ -39,8 +43,10 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     }),
   );
 
-  console.log("projectRoot", projectRoot);
+  console.error("[mcp-dev-tools] projectRoot:", projectRoot);
   registerListFilesTool(server, projectRoot);
+  registerReadFileTool(server, projectRoot);
+  registerSearchCodeTool(server, projectRoot);
 
   return server;
 }

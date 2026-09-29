@@ -1,6 +1,6 @@
 # 项目 07：MCP Dev Tools
 
-> 当前状态：准备阶段完成，等待按步骤实现
+> 当前状态：第 4 步完成，三个只读 MCP 工具已接入
 > 学习目标：使用官方 TypeScript SDK，把项目 04 的只读开发工具暴露为 MCP Server，并通过 MCP Client、Inspector 和真实 Host 验证调用
 
 ## 这是什么
@@ -101,11 +101,11 @@ MCP Client / Inspector / Host
 
 ### 第 4 步：补齐只读开发工具
 
-- [ ] 接入 `read_file`
-- [ ] 接入 `search_code`
-- [ ] 为三个工具补充清晰的名称、描述和参数说明
-- [ ] 抽取 `src/tools/result.ts`，统一成功与失败结果格式
-- [ ] 保持工具处理器与 MCP 注册逻辑分离，方便单元测试
+- [x] 接入 `read_file`
+- [x] 接入 `search_code`
+- [x] 为三个工具补充清晰的名称、描述和参数说明
+- [x] 抽取 `src/tools/result.ts`，统一成功与失败结果格式
+- [x] 保持工具处理器与 MCP 注册逻辑分离，方便单元测试
 
 验收：三个工具都能被列出、参数校验生效、错误能作为工具结果返回。
 

@@ -242,7 +242,69 @@ MCP 适配器只承担三项职责：
 
 ## 第 4 步：补齐只读开发工具
 
-待补充。
+### 本步目标
+
+接入项目 04 的 `readFile()` 和 `searchCode()`，让 Server 具备完整的三个只读开发工具；同时统一 MCP 文本结果和错误结果，保持工具处理器可以脱离注册逻辑单独测试。
+
+### 实际改动
+
+- 新增 `src/tools/read-file.ts`：声明读取参数、适配 `readFile()` 并注册 `read_file`。
+- 新增 `src/tools/search-code.ts`：声明搜索参数、适配 `searchCode()` 并注册 `search_code`。
+- 新增 `src/tools/result.ts`：提供统一的 `textResult()` 和 `errorResult()`。
+- 重构 `src/tools/list-files.ts`：改用统一结果函数，并导出独立的 `handleListFiles()`。
+- 修改 `src/server.ts`：注册三个只读工具，并把 `projectRoot` 统一转换成绝对路径。
+
+每个适配器分成三层：
+
+```text
+Zod Schema
+  ↓ 声明并校验参数
+handleXxx()
+  ↓ 调用项目 04 的真实工具并转换结果
+registerXxxTool()
+  ↓ 把名称、描述、Schema 和处理器注册给 McpServer
+```
+
+三个工具都声明了只读、非破坏、幂等且不访问开放网络的 annotations。这些元数据帮助 Client 或 Host 理解工具性质，但真正的安全边界仍由代码中的 `projectRoot` 和 `safePath()` 保证。
+
+### 参数约束
+
+`read_file`：
+
+- `path` 必填且不能为空。
+- `startLine`、`endLine` 必须是正整数。
+- 同时提供时，`endLine` 必须大于或等于 `startLine`。
+
+`search_code`：
+
+- `query` 必填且不能为空。
+- `dir` 可选，提供时不能为空。
+
+### 验证结果
+
+使用 SDK 内存传输完成真实 MCP 调用：
+
+- `tools/list` 返回 `project_info`、`list_files`、`read_file` 和 `search_code`。
+- `read_file` 成功返回 `README.md` 第 1～3 行。
+- `search_code` 搜索 `McpServer`，成功返回正确的 `src/...` 相对路径和行号。
+- `read_file({ path: ".env" })` 被敏感路径策略拒绝，并返回 `isError: true`。
+- `startLine: 5, endLine: 2` 在进入处理函数前被输入 Schema 拒绝，并返回 `isError: true`。
+- TypeScript 类型检查通过。
+
+### 问题记录
+
+第一次验证时传入了相对形式的 `projectRoot`。安全工具内部会使用绝对路径，而 `searchCode()` 使用传入的根路径长度截取相对文件名，导致结果出现错误前缀。修复方式是在 Server 入口通过 `resolve()` 把根目录统一转换成绝对路径，再把同一个值传给所有真实工具。
+
+验证期间发现 `server.ts` 中存在一条 `console.log()` 调试输出。stdio 的 stdout 是协议通道，因此保留调试信息但改用 `console.error()` 输出到 stderr。
+
+这说明类型检查只能证明类型关系成立，不能证明文件路径和协议通道等运行时语义正确，仍需执行真实调用验证。
+
+### 学习确认
+
+- `textResult()` 和 `errorResult()` 统一三个工具的 MCP 返回格式，后续修改成功或错误格式时只需维护一处。
+- `registerXxxTool()` 负责协议层的名称、描述、Schema 和注册；`handleXxx()` 接收已校验参数、调用真实工具并生成结果，可以脱离 `McpServer` 单独测试。
+- `readOnlyHint` 等 annotations 只向 Client、Host 或模型描述工具性质，不会自动阻止代码写文件，不能代替 `safePath()` 等真实安全检查。
+- `projectRoot` 在入口统一转换成绝对路径，让路径越界判断和相对文件名计算使用同一个稳定基准。
 
 ## 第 5～6 步：Client、Inspector 与真实 Host
 
