@@ -1,0 +1,21 @@
+projects/07-mcp-dev-tools/README.md
+  s_99a171e4b31844::t_0dd9257086dd90 55-62,75-78
+projects/07-mcp-dev-tools/notes.md
+  s_99a171e4b31844::t_0dd9257086dd90 71-116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.1",
+  "base_commit_sha": "04de8874640513ce9a8c712047cf497f6a963f2a",
+  "prompts": {},
+  "sessions": {
+    "s_99a171e4b31844": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ebe5-2aa3-7b61-8e7e-71137a8de7ed",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "lang.jiang <lang.jiang@ximalaya.com>"
+    }
+  }
+}
