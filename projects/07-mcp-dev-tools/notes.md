@@ -517,6 +517,16 @@ git diff --check
 - 截断逻辑放在公共 `result.ts` 中可以复用并统一所有工具的结果上限，避免各工具规则不一致。
 - Client 也会发送 MCP 消息，但由 Transport 直接写入 Server stdin；Client 的 `console.log()` 输出到用户终端。Server stdout 则被 Client 当作协议输入解析，混入普通日志会导致解析失败。
 
+### stdout 污染实验
+
+为了验证普通日志的真实影响，曾临时在 `createServer()` 中加入 `console.log()`，并使用真实 Client 连接：
+
+1. 输出普通文本时，当前 MCP TypeScript SDK v2 把这一行视为无法解析的 JSON，并容错跳过；Client 没有退出，后续工具调用仍成功。
+2. 输出合法 JSON `{}` 时，JSON 解析成功，但它不符合 JSON-RPC Schema。给 Client 临时注册 `onerror` 后观察到 `ZodError`；当前 SDK 仍继续处理了后续正确消息，因此进程最终没有退出。
+3. 项目的 stdout 守卫测试会立即发现 Server 源码中的 `console.log()`，测试从 9/9 通过变成 1 项失败。
+
+结论：stdout 被污染不一定在每个 Client、每种日志内容下立即中断连接，这取决于 Client 的容错实现；但它已经违反 stdio 协议通道的边界，可能产生解析错误或兼容性问题。因此实验结束后已移除临时日志，Server 日志仍只允许写入 stderr。
+
 ## 第 8 步：MCP 与 Function Calling 对比
 
 待补充。
