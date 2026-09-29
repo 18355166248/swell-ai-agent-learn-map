@@ -1,0 +1,27 @@
+projects/07-mcp-dev-tools/README.md
+  s_99a171e4b31844::t_2cef0701686069 94-98
+projects/07-mcp-dev-tools/src/server.ts
+  s_99a171e4b31844::t_fc4c83af244823 6-7,15-20,42-43
+  s_99a171e4b31844::t_d8dc22f2611f82 44
+projects/07-mcp-dev-tools/notes.md
+  s_99a171e4b31844::t_d4b053b30d48cb 185-235,243
+  s_99a171e4b31844::t_2cef0701686069 236-242
+projects/07-mcp-dev-tools/src/tools/list-files.ts
+  s_99a171e4b31844::t_fc4c83af244823 1-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.1",
+  "base_commit_sha": "8aac90ccdaa201011513808084ad2f8c41943127",
+  "prompts": {},
+  "sessions": {
+    "s_99a171e4b31844": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ebe5-2aa3-7b61-8e7e-71137a8de7ed",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "lang.jiang <lang.jiang@ximalaya.com>"
+    }
+  }
+}
