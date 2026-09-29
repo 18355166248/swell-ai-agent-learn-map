@@ -1,6 +1,6 @@
 # 项目 07：MCP Dev Tools
 
-> 当前状态：第 6 步完成，Inspector 与真实 Codex Host 验证通过
+> 当前状态：第 7 步完成，测试与安全边界验证通过
 > 学习目标：使用官方 TypeScript SDK，把项目 04 的只读开发工具暴露为 MCP Server，并通过 MCP Client、Inspector 和真实 Host 验证调用
 
 ## 这是什么
@@ -136,12 +136,12 @@ npx --yes @modelcontextprotocol/inspector@2.8.0 --cli \
 
 ### 第 7 步：补测试与安全边界
 
-- [ ] 单元测试三个工具适配器
-- [ ] 测试输入 Schema 拒绝非法参数
-- [ ] 测试目录穿越和敏感文件访问仍被拒绝
-- [ ] 编写 Client/Server stdio 集成测试，至少覆盖 `tools/list` 和一次 `tools/call`
-- [ ] 检查源码中没有会污染 stdout 的 `console.log`
-- [ ] 为超长工具结果增加截断策略
+- [x] 单元测试三个工具适配器
+- [x] 测试输入 Schema 拒绝非法参数
+- [x] 测试目录穿越和敏感文件访问仍被拒绝
+- [x] 编写 Client/Server stdio 集成测试，至少覆盖 `tools/list` 和一次 `tools/call`
+- [x] 检查源码中没有会污染 stdout 的 `console.log`
+- [x] 为超长工具结果增加截断策略
 
 验收：`npm test` 和 `npm run typecheck` 全部通过。
 

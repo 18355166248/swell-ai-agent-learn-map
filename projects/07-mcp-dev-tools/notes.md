@@ -457,7 +457,65 @@ status: completed
 
 ## 第 7 步：测试与安全边界
 
-待补充。
+### 本步目标
+
+把前面依靠手工命令确认的行为固化为自动化测试，同时限制工具结果长度，避免一次读取或搜索返回过多文本，占用 Host 的模型上下文。
+
+### 测试分层
+
+本步使用两类测试，它们证明的范围不同：
+
+| 测试                              | 直接验证什么                                                 | 不负责验证什么                   |
+| --------------------------------- | ------------------------------------------------------------ | -------------------------------- |
+| `tests/tools.test.ts`             | 三个适配器、Zod Schema、路径安全、结果截断和 stdout 规则     | MCP 子进程能否完成真实通信       |
+| `tests/stdio.integration.test.ts` | Client 启动 Server 子进程后完成 `tools/list` 和 `tools/call` | Inspector 或真实 Host 的模型决策 |
+
+单元测试直接调用 `handleListFiles()`、`handleReadFile()` 和 `handleSearchCode()`，不用先创建 `McpServer`。这样测试失败时更容易判断是工具适配逻辑的问题，还是协议注册与传输的问题。
+
+集成测试则刻意不使用内存传输，而是通过 `StdioClientTransport` 启动真实 `server.ts` 子进程，覆盖以下链路：
+
+```text
+Vitest 中的 Client
+  ↓ 启动 Node.js 子进程
+server.ts
+  ↓ stdin/stdout JSON-RPC
+tools/list + tools/call
+```
+
+### 安全与结果边界
+
+- 临时测试项目包含普通文件、代码文件和 `.env`，每次测试结束后清理。
+- `../` 目录穿越必须返回 `isError: true`。
+- `.env` 敏感文件读取必须返回 `isError: true`。
+- Zod Schema 必须拒绝错误类型、空搜索词和倒置的读取行号。
+- Server 与 `src/tools` 源码不能包含 `console.log()`，防止普通日志污染 stdout 协议消息；`src/client.ts` 不受此限制，因为它的 stdout 面向用户。
+- `textResult()` 和 `errorResult()` 在统一协议出口把文本限制为最多 12000 个字符，并在截断后保留原始长度提示。
+
+把截断放在公共结果函数而不是三个工具内部，可以确保当前及后续工具都遵守同一个输出上限，也避免某个错误消息意外变得特别长。
+
+### 执行命令
+
+```bash
+fnm exec -- npm run typecheck
+fnm exec -- npm test
+npx prettier --check README.md notes.md package.json src/*.ts src/tools/*.ts tests/*.ts
+git diff --check
+```
+
+### 验证结果
+
+- TypeScript 类型检查通过。
+- 2 个测试文件通过，共 9 个测试通过。
+- stdio 集成测试真实启动 Server 子进程，`tools/list` 返回四个工具，并成功调用一次 `list_files`。
+- Prettier 和 `git diff --check` 通过。
+- `npm` 输出的 `Unknown user config "email"` 是本机 npm 配置的未来兼容警告，不影响本项目测试结果。
+
+### 学习确认
+
+- 单元测试证明工具适配器自身的输入、输出和安全规则符合预期；stdio 集成测试进一步证明 Client、Server 子进程和协议传输可以协同工作。测试能提高可靠性，但不能证明所有未知输入下绝对没有问题。
+- `handleReadFile()` 是不依赖 MCP 注册过程的工具适配逻辑，直接测试它可以更快、更准确地定位功能问题。
+- 截断逻辑放在公共 `result.ts` 中可以复用并统一所有工具的结果上限，避免各工具规则不一致。
+- Client 也会发送 MCP 消息，但由 Transport 直接写入 Server stdin；Client 的 `console.log()` 输出到用户终端。Server stdout 则被 Client 当作协议输入解析，混入普通日志会导致解析失败。
 
 ## 第 8 步：MCP 与 Function Calling 对比
 
