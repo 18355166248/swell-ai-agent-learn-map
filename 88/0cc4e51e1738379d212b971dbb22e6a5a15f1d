@@ -1,0 +1,35 @@
+projects/07-mcp-dev-tools/README.md
+  s_99a171e4b31844::t_f38f0c36b58704 3,104-108
+projects/07-mcp-dev-tools/notes.md
+  s_99a171e4b31844::t_b4f058accac914 245-300
+  s_99a171e4b31844::t_f38f0c36b58704 302-307
+  s_99a171e4b31844::t_95c96629a9357e 301
+projects/07-mcp-dev-tools/src/server.ts
+  s_99a171e4b31844::t_70c46893b38287 1,23-24
+  s_99a171e4b31844::t_bf043df622e096 8-9,48-49
+  s_99a171e4b31844::t_1eff2310a36838 46
+projects/07-mcp-dev-tools/src/tools/result.ts
+  s_99a171e4b31844::t_bf043df622e096 1-16
+projects/07-mcp-dev-tools/src/tools/search-code.ts
+  s_99a171e4b31844::t_bf043df622e096 1-42
+projects/07-mcp-dev-tools/src/tools/read-file.ts
+  s_99a171e4b31844::t_bf043df622e096 1-52
+projects/07-mcp-dev-tools/src/tools/list-files.ts
+  s_99a171e4b31844::t_bf043df622e096 5,7,12-23,33-38,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.1",
+  "base_commit_sha": "880cc4e51e1738379d212b971dbb22e6a5a15f1d",
+  "prompts": {},
+  "sessions": {
+    "s_99a171e4b31844": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0ebe5-2aa3-7b61-8e7e-71137a8de7ed",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "lang.jiang <lang.jiang@ximalaya.com>"
+    }
+  }
+}
