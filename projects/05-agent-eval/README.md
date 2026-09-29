@@ -52,17 +52,17 @@
 
 ### 第 1 步：先看任务和结果，不急着看实现
 
-- [ ] 阅读 `../../experiments/agent-evals/agent-eval-round-01.json`
-- [ ] 重点理解 `expectedTools`、`expectedKeyPoints`、`category` 和 `checks`
-- [ ] 对照 `reports/round-1-agent.json`，观察一条任务如何变成 `checks`、`failureTypes` 和 `passed`
+- [x] 阅读 `../../experiments/agent-evals/agent-eval-round-01.json`
+- [x] 重点理解 `expectedTools`、`expectedKeyPoints`、`category` 和 `checks`
+- [x] 对照 `reports/round-1-agent.json`，观察一条任务如何变成 `checks`、`failureTypes` 和 `passed`
 
 学习产出：能用自己的话说明“输入任务、系统输出、检查结果、最终判定”四者之间的关系。
 
 ### 第 2 步：理解评估结果的数据模型
 
-- [ ] 阅读 `src/schema.ts`
-- [ ] 理解 `EvalType`、`CheckResult`、`FailureType`、`EvalTaskResult`、`EvalRoundReport`
-- [ ] 重点区分“某个维度失败”和“整条任务失败”
+- [x] 阅读 `src/schema.ts`
+- [x] 理解 `EvalType`、`CheckResult`、`FailureType`、`EvalTaskResult`、`EvalRoundReport`
+- [x] 重点区分“某个维度失败”和“整条任务失败”
 
 学习产出：能解释 `CheckResult -> FailureType -> EvalRoundReport` 的数据流。
 
