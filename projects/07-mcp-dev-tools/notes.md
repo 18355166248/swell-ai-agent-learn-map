@@ -117,7 +117,70 @@ npm run typecheck --workspace=mcp-dev-tools
 
 ## 第 2 步：最小 MCP Server
 
-待补充。
+### 本步目标
+
+先不接入真实文件工具，只用无参数、无副作用的 `project_info` 跑通“创建 Server、注册 Tool、连接 stdio”这条最小链路。
+
+### 实际改动
+
+- 新增 `src/server.ts`：提供 `createServer()` 工厂，注册 `project_info`，并在直接运行时通过 `serveStdio()` 启动服务。
+- 修改 `src/index.ts`：导出 `createServer()`，供后续测试或其他模块复用。
+
+核心结构：
+
+```ts
+export function createServer(): McpServer {
+  const server = new McpServer({
+    name: "mcp-dev-tools",
+    version: "0.1.0",
+  });
+
+  server.registerTool("project_info", config, handler);
+  return server;
+}
+
+if (isDirectRun()) {
+  serveStdio(() => createServer());
+}
+```
+
+- `McpServer` 管理 Tools、Resources 和 Prompts 等 MCP 能力。
+- `registerTool()` 同时声明工具元数据和收到 `tools/call` 后执行的处理函数。
+- `serveStdio()` 把 Server 接到当前进程的 stdin/stdout，并为连接创建 Server 实例。
+- `project_info` 只返回固定项目信息，不读取或修改文件，适合用来验证最小协议链路。
+
+实际实现增加了“仅直接运行时启动”的判断。这样 `npx tsx src/server.ts` 会启动 stdio 服务，而其他模块导入 `createServer()` 时不会意外占用 stdin/stdout。
+
+### 执行命令
+
+```bash
+npm run typecheck --workspace=mcp-dev-tools
+npx prettier --check projects/07-mcp-dev-tools/src/server.ts projects/07-mcp-dev-tools/src/index.ts
+cd projects/07-mcp-dev-tools
+npm run server
+```
+
+### 验证结果
+
+- TypeScript 类型检查通过。
+- Prettier 格式检查通过。
+- Server 启动后保持等待 Client 输入，直到使用 `Ctrl+C` 主动结束。
+- 等待期间没有普通 stdout 输出，协议通道未被启动日志污染。
+
+### 问题记录
+
+沙箱内首次运行 `tsx` 时，其内部 IPC 管道创建被系统以 `EPERM` 拒绝。这不是 MCP Server 的实现错误；在允许创建本地 IPC 管道的环境中重跑后，Server 正常启动并等待输入。
+
+Node.js 20 不能直接执行 `.ts` 文件。运行 `node src/server.ts` 会得到 `ERR_UNKNOWN_FILE_EXTENSION`；`"type": "module"` 只决定 JavaScript 使用 ESM 规则，不负责擦除 TypeScript 类型。项目通过 `tsx` 运行源码，因此应使用 `npm run server`（等价于 `tsx src/server.ts`）。命令末尾也不需要附加 `node_modules/` 参数。
+
+stdio 模式下不要使用 `console.log()` 输出日志。当前 `onerror` 使用 `console.error()`，保证错误进入 stderr，不会混入 MCP 的 stdout 协议消息。
+
+### 学习确认
+
+- 当前 MCP Server 不监听网络端口，通信完全通过本地进程的 stdin/stdout 完成。
+- `McpServer` 负责声明和执行 MCP 能力，`serveStdio` 负责在 Client 与 Server 之间传输协议消息。
+- `registerTool()` 的第三个参数是工具处理函数，Client 调用 `project_info` 时由它生成结果。
+- 只有直接运行 `server.ts` 时才启动 stdio；导入 `createServer()` 不会占用调用方进程的 stdin/stdout。
 
 ## 第 3～4 步：只读工具接入
 

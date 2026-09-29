@@ -81,11 +81,11 @@ MCP Client / Inspector / Host
 
 ### 第 2 步：写第一个最小 MCP Server
 
-- [ ] 创建 `src/server.ts`
-- [ ] 使用 `McpServer` 创建 Server
-- [ ] 注册一个无副作用的 `project_info` 工具
-- [ ] 使用 `serveStdio(() => createServer())` 启动 stdio 服务
-- [ ] 所有调试日志使用 `console.error`，不向 stdout 写普通日志
+- [x] 创建 `src/server.ts`
+- [x] 使用 `McpServer` 创建 Server
+- [x] 注册一个无副作用的 `project_info` 工具
+- [x] 使用 `serveStdio(() => createServer())` 启动 stdio 服务
+- [x] 所有调试日志使用 `console.error`，不向 stdout 写普通日志
 
 验收：Server 能启动并等待 Client 连接；stdout 中没有非协议内容。
 
@@ -172,8 +172,8 @@ npx @modelcontextprotocol/inspector npx tsx src/server.ts
 ├── package.json
 ├── tsconfig.json
 ├── src/
-│   ├── index.ts              # 当前准备阶段占位入口
-│   ├── server.ts             # 第 2 步创建
+│   ├── index.ts              # 对外导出项目名称与 Server 工厂
+│   ├── server.ts             # stdio Server 入口与 Server 工厂
 │   ├── client.ts             # 第 5 步创建
 │   └── tools/
 │       ├── list-files.ts
