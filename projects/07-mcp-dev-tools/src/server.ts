@@ -3,6 +3,8 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 
+import { registerListFilesTool } from "./tools/list-files.js";
+
 const PROJECT_INFO = {
   name: "mcp-dev-tools",
   version: "0.1.0",
@@ -10,7 +12,12 @@ const PROJECT_INFO = {
   transport: "stdio",
 } as const;
 
-export function createServer(): McpServer {
+interface CreateServerOptions {
+  projectRoot?: string;
+}
+
+export function createServer(options: CreateServerOptions = {}): McpServer {
+  const projectRoot = options.projectRoot ?? process.cwd();
   const server = new McpServer({
     name: PROJECT_INFO.name,
     version: PROJECT_INFO.version,
@@ -31,6 +38,9 @@ export function createServer(): McpServer {
       ],
     }),
   );
+
+  console.log("projectRoot", projectRoot);
+  registerListFilesTool(server, projectRoot);
 
   return server;
 }

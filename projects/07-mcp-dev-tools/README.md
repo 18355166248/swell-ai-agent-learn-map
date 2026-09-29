@@ -91,11 +91,11 @@ MCP Client / Inspector / Host
 
 ### 第 3 步：接入第一个真实工具
 
-- [ ] 创建 `src/tools/list-files.ts`
-- [ ] 使用 Zod 定义 `list_files` 的输入 Schema
-- [ ] 调用项目 04 已有的 `listFiles` 实现
-- [ ] 把字符串结果转换成 MCP `content` 文本块
-- [ ] 捕获异常并返回 `isError: true`，不要让整个 Server 崩溃
+- [x] 创建 `src/tools/list-files.ts`
+- [x] 使用 Zod 定义 `list_files` 的输入 Schema
+- [x] 调用项目 04 已有的 `listFiles` 实现
+- [x] 把字符串结果转换成 MCP `content` 文本块
+- [x] 捕获异常并返回 `isError: true`，不要让整个 Server 崩溃
 
 验收：可以列出仓库内指定目录，但无法绕过项目 04 的路径安全边界。
 

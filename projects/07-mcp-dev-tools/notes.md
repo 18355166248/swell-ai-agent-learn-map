@@ -182,7 +182,65 @@ stdio 模式下不要使用 `console.log()` 输出日志。当前 `onerror` 使�
 - `registerTool()` 的第三个参数是工具处理函数，Client 调用 `project_info` 时由它生成结果。
 - 只有直接运行 `server.ts` 时才启动 stdio；导入 `createServer()` 不会占用调用方进程的 stdin/stdout。
 
-## 第 3～4 步：只读工具接入
+## 第 3 步：接入 `list_files`
+
+### 本步目标
+
+把项目 04 已有的 `listFiles()` 暴露成 MCP Tool，同时继续复用原实现中的路径安全边界，不在 MCP 项目中复制文件遍历代码。
+
+### 真实调用链
+
+```text
+MCP Client
+  ↓ tools/call: list_files
+项目 07：src/tools/list-files.ts
+  ↓ 参数校验、结果格式转换、错误包装
+项目 04：listFiles()
+  ↓
+项目 04：safePath()
+  ↓
+文件系统
+```
+
+### 实际改动
+
+- 新增 `src/tools/list-files.ts`，使用 Zod 声明 `dir` 和 `pattern` 两个可选参数。
+- 在 `src/server.ts` 中调用 `registerListFilesTool()`。
+- `createServer()` 接受可选的 `projectRoot`；默认使用启动进程的 `process.cwd()`。
+
+MCP 适配器只承担三项职责：
+
+1. 使用 Zod 把 MCP 输入转换为经过校验的 TypeScript 参数。
+2. 把可信的 `projectRoot` 传给项目 04 的 `listFiles()`。
+3. 把字符串结果转换为 MCP 文本 `content`；捕获异常时返回 `isError: true`。
+
+目录穿越和敏感路径判断仍由项目 04 的 `safePath()` 负责。这样安全策略只有一份真实实现，后续修复时不会出现两个项目行为不一致。
+
+### 验证方式
+
+验证时使用 SDK 的 `InMemoryTransport` 临时连接 Client 与 Server。它不监听端口，也没有写入正式 Client 源码，只用于确认 MCP 注册和调用链确实可用。
+
+验证结果：
+
+- `tools/list` 返回 `project_info` 和 `list_files`。
+- `list_files({ dir: "src", pattern: "*.ts" })` 成功返回 `index.ts`、`server.ts` 和 `tools/list-files.ts`。
+- `list_files({ dir: "../04-dev-copilot-manual" })` 被拒绝，结果包含“禁止访问项目目录外的路径”，并设置 `isError: true`。
+- TypeScript、Prettier 和 `git diff --check` 均通过。
+
+### 关键边界
+
+- `projectRoot` 决定 MCP Server 允许访问的目录范围；当前默认值是启动 Server 时的工作目录。
+- Zod 负责参数形状和最小长度校验，`safePath()` 负责文件系统路径安全，两者职责不同，不能互相替代。
+- 项目 04 对不存在目录返回普通文本；对目录穿越等安全违规抛出异常，因此 MCP 适配器只把后者标记为 `isError: true`。
+
+### 学习确认
+
+- Zod 校验 Client 参数的类型和格式；`safePath()` 阻止路径越过 `projectRoot`，并拒绝 `.env`、密钥和证书等敏感路径。
+- `safePath()` 不检查目录是否存在；目录存在性由 `listFiles()` 中的文件系统检查负责。
+- `projectRoot` 的首要作用是定义允许访问的目录范围，而不只是帮助定位文件。
+- 工具异常转换为 `isError: true` 后，Client 能识别本次调用失败，同时 Server 可以继续处理后续请求。
+
+## 第 4 步：补齐只读开发工具
 
 待补充。
 
