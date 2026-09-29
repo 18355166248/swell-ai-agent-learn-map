@@ -314,7 +314,7 @@ registerXxxTool()
 
 ### 实际改动
 
-- 新增 `src/client.ts`：创建 `Client` 和 `StdioClientTransport`，调用三个只读工具并打印结果。897
+- 新增 `src/client.ts`：创建 `Client` 和 `StdioClientTransport`，调用三个只读工具并打印结果。
 - 在 `package.json` 新增 `client` 脚本，可通过 `npm run client` 运行完整演示。
 
 Client 创建的 Transport 配置：
@@ -378,7 +378,82 @@ npm run client
 
 ## 第 6 步：Inspector 与真实 Host
 
-待补充。
+### 本步目标
+
+使用官方 MCP Inspector 作为独立调试客户端验证工具发现、正常调用和参数错误；再把同一个 stdio Server 配置到真实 Codex Host 中。
+
+### Node.js 环境
+
+当前 MCP Inspector v2 要求 Node.js 22.19.0+。项目代码仍保持 Node.js 20+ 兼容，但本项目新增 `.node-version` 固定学习和 Inspector 验证环境为 `24.13.0`。
+
+启用 fnm 的 `--use-on-cd` 后，进入项目目录会自动切换版本。也可以手动验证：
+
+```bash
+fnm use
+node --version
+```
+
+### Inspector 验证
+
+本次固定使用 `@modelcontextprotocol/inspector@2.8.0`，避免 `npx` 在未来解析到不同版本。
+
+连接与初始化：
+
+```bash
+npx --yes @modelcontextprotocol/inspector@2.8.0 --cli \
+  node --import tsx src/server.ts -- \
+  --method initialize --connect-timeout 15000
+```
+
+CLI 模式下，目标 Server 命令必须位于 Inspector 参数之前。由于目标命令本身包含 `--import`，使用单独的 `--` 把 Server 参数与 Inspector 的 `--method` 分开。
+
+验证结果：
+
+- `initialize` 返回 Server 名称 `mcp-dev-tools`、版本 `0.1.0` 和 Tools 能力。
+- `tools/list` 返回四个工具，以及三个只读工具的 Schema 和 annotations。
+- Inspector 分别成功调用 `list_files`、`read_file` 和 `search_code`。
+- 缺少必填 `path` 调用 `read_file` 时，结果返回 `isError: true`，Inspector 以退出码 `5` 标记工具错误。
+
+### Codex Host 配置
+
+项目级 `.codex/config.toml`：
+
+```toml
+[mcp_servers.mcp_dev_tools]
+command = "node"
+args = ["--import", "tsx", "src/server.ts"]
+startup_timeout_sec = 15
+tool_timeout_sec = 30
+```
+
+从当前项目目录启动 Codex 时才会加载该配置，不会修改用户全局的 `~/.codex/config.toml`。以下命令已确认配置能够被 Codex 识别：
+
+```bash
+codex mcp list
+codex mcp get mcp_dev_tools
+```
+
+### 真实 Codex Host 验证
+
+真实 Host 调用会把 MCP 工具返回的本地代码片段发送给外部模型服务，因此在获得明确授权后，使用临时、只读 Codex 会话执行验收：
+
+```bash
+codex -s read-only -a never exec --ephemeral --json \
+  "必须调用 mcp_dev_tools 的 search_code 工具，参数 query=StdioClientTransport、dir=src"
+```
+
+JSONL 事件确认模型真实发起了 MCP 调用：
+
+```text
+server: mcp_dev_tools
+tool: search_code
+arguments: { query: "StdioClientTransport", dir: "src" }
+status: completed
+```
+
+工具返回 `src/client.ts` 中 2 条匹配，模型基于工具结果回答“匹配 2 条，涉及文件：src/client.ts”。`--ephemeral` 让本次验收不持久化会话，`read-only` 禁止修改工作区。
+
+运行时同时出现本机模型缓存、Hooks 重复配置和技能预算警告，但会话最终产生 `turn.completed`，且 MCP Tool Call 状态为 `completed`；这些警告没有阻断本次 MCP 验收，不应误判为 Server 错误。
 
 ## 第 7 步：测试与安全边界
 

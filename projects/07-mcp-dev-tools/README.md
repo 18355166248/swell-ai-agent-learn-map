@@ -1,6 +1,6 @@
 # 项目 07：MCP Dev Tools
 
-> 当前状态：第 5 步完成，stdio Client/Server 闭环已跑通
+> 当前状态：第 6 步完成，Inspector 与真实 Codex Host 验证通过
 > 学习目标：使用官方 TypeScript SDK，把项目 04 的只读开发工具暴露为 MCP Server，并通过 MCP Client、Inspector 和真实 Host 验证调用
 
 ## 这是什么
@@ -41,7 +41,7 @@ MCP Client / Inspector / Host
 
 ## 技术选择
 
-- Node.js 20+
+- Node.js 20+（本项目通过 `.node-version` 固定本地学习环境为 24.13.0）
 - TypeScript + ESM
 - MCP TypeScript SDK v2
 - Zod v4
@@ -121,16 +121,17 @@ MCP Client / Inspector / Host
 
 ### 第 6 步：使用 Inspector 和真实 Host 验证
 
-- [ ] 使用 MCP Inspector 连接本地 stdio Server
-- [ ] 在 Inspector 中查看并调用三个工具
-- [ ] 选择一个真实 Host，配置本地 MCP Server
-- [ ] 让 Host 中的模型自主选择并调用工具回答代码问题
-- [ ] 记录至少一次成功调用和一次参数错误
+- [x] 使用 MCP Inspector 连接本地 stdio Server
+- [x] 在 Inspector 中查看并调用三个工具
+- [x] 选择一个真实 Host，配置本地 MCP Server
+- [x] 让 Host 中的模型自主选择并调用工具回答代码问题
+- [x] 记录至少一次成功调用和一次参数错误
 
-Inspector 验证命令将在 Server 完成后加入 `package.json`，形式如下：
+当前 Inspector v2 需要 Node.js 22.19.0+。项目通过 `.node-version` 使用 Node.js 24.13.0，并固定 Inspector 版本以保证验证可复现：
 
 ```bash
-npx @modelcontextprotocol/inspector npx tsx src/server.ts
+npx --yes @modelcontextprotocol/inspector@2.8.0 --cli \
+  node --import tsx src/server.ts -- --method tools/list
 ```
 
 ### 第 7 步：补测试与安全边界
@@ -167,6 +168,9 @@ npx @modelcontextprotocol/inspector npx tsx src/server.ts
 
 ```text
 07-mcp-dev-tools/
+├── .codex/
+│   └── config.toml        # Codex Host 的项目级 MCP 配置
+├── .node-version          # fnm 自动切换到 Node.js 24.13.0
 ├── README.md
 ├── notes.md
 ├── package.json
